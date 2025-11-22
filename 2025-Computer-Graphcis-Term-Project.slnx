@@ -1,7 +1,12 @@
 <Solution>
   <Configurations>
+    <BuildType Name="brassgum-Debug" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="2025-Computer-Graphcis-Term-Project.vcxproj" Id="a44a1c98-46c1-4919-b350-9aea545b718e" />
+  <Project Path="2025-Computer-Graphcis-Term-Project.vcxproj" Id="a44a1c98-46c1-4919-b350-9aea545b718e">
+    <BuildType Solution="brassgum-Debug|*" Project="brassgum-Debug-x64" />
+  </Project>
 </Solution>
