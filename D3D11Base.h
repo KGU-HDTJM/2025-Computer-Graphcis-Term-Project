@@ -8,6 +8,12 @@
 #include <DirectXColors.h>
 #include <EASTL/vector.h>
 
+<<<<<<< Updated upstream
+=======
+#include"Noise.h"
+#include"Sphere.h"
+
+>>>>>>> Stashed changes
 #pragma comment(lib, "dxgi.lib")  
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -24,7 +30,7 @@ public:
 	D3D11Base(void) : mDevice(nullptr), mSwapChain(nullptr), mImmediateContext(nullptr)
 		, mAdapter(nullptr), mFeatureLevel(D3D_FEATURE_LEVEL_11_1)
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
-		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
+		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr), mBall(nullptr)
 	{
 		mConstantBuffer.View = XMMatrixIdentity();
 		mCBResize.Projection = XMMatrixIdentity();
@@ -46,8 +52,17 @@ private:
 
 
 private:
+<<<<<<< Updated upstream
 	ID3D11Device* mDevice = nullptr;
 	IDXGISwapChain* mSwapChain = nullptr;
+=======
+	Perlin perlinNoise;
+	Sphere* mBall = nullptr;
+
+
+	ID3D11Device*        mDevice = nullptr;
+	IDXGISwapChain*      mSwapChain = nullptr;
+>>>>>>> Stashed changes
 	ID3D11DeviceContext* mImmediateContext = nullptr;
 
 	IDXGIAdapter1* mAdapter = nullptr;
