@@ -1,5 +1,6 @@
 <Solution>
   <Configurations>
+    <BuildType Name="areian0511-Debug" />
     <BuildType Name="brassgum-Debug" />
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
