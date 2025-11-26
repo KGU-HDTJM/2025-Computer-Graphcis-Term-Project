@@ -3,6 +3,7 @@
     <BuildType Name="areian0511-Debug" />
     <BuildType Name="brassgum-Debug" />
     <BuildType Name="Debug" />
+    <BuildType Name="didvkahs-Debug" />
     <BuildType Name="Release" />
     <Platform Name="x64" />
     <Platform Name="x86" />
