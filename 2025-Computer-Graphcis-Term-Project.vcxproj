@@ -239,17 +239,11 @@
     <ClInclude Include="D3D11Base.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="Sphere.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="2025-Computer-Graphcis-Term-Project.cpp" />
     <ClCompile Include="D3D11Base.cpp" />
-<<<<<<< Updated upstream
-=======
-    <ClCompile Include="Noise.cpp" />
-    <ClCompile Include="Sphere.cpp" />
->>>>>>> Stashed changes
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2025-Computer-Graphcis-Term-Project.rc" />
