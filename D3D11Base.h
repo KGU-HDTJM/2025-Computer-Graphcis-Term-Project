@@ -33,8 +33,8 @@ public:
 	bool Initialize(HWND hWnd);
 	ID3D11Device* GetDevice(void) const;
 	ID3D11DeviceContext* GetImmediateContext(void) const;
-	bool AddVertexShader(const LPWSTR fileName, const UINT numElements = 0, const D3D11_INPUT_ELEMENT_DESC* layoutOrNULL = nullptr);
-	bool AddPixelShader(const LPWSTR fileName);
+	bool AddVertexShader(const LPWSTR filePath);
+	bool AddPixelShader(const LPWSTR filePath);
 	void Cleanup(void);
 
 private:
@@ -42,7 +42,7 @@ private:
 	bool createDeviceAndSwapChain(HWND hWnd, UINT width, UINT height);
 	bool createRenderTargets(UINT width, UINT height);
 	void setFullSizeViewport(UINT width, UINT height);
-
+	bool addVertexShader(const LPWSTR filePath, const UINT numElements = 0, const D3D11_INPUT_ELEMENT_DESC* layoutOrNULL = nullptr);
 
 private:
 	ID3D11Device* mDevice = nullptr;

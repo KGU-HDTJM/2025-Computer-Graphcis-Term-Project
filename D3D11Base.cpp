@@ -51,7 +51,7 @@ bool D3D11Base::Initialize(HWND hWnd)
 		};
 		UINT numElements = ARRAYSIZE(layout);
 		mVertexShaders = new vector<ID3D11VertexShader*>();
-		bool success = AddVertexShader((const LPWSTR)L"defaultVertexShader.hlsl", numElements, layout);
+		bool success = addVertexShader((const LPWSTR)L"defaultVertexShader.hlsl", numElements, layout);
 		mPixelShaders = new vector<ID3D11PixelShader*>();
 		AddPixelShader((const LPWSTR)L"defaultPixelShader.hlsl");
 	}
@@ -78,12 +78,17 @@ ID3D11DeviceContext* D3D11Base::GetImmediateContext(void) const
 	return mImmediateContext;
 }
 
-bool D3D11Base::AddVertexShader(const LPWSTR fileName, const UINT numElements, const D3D11_INPUT_ELEMENT_DESC* layout)
+bool D3D11Base::AddVertexShader(const LPWSTR filePath)
+{
+	return addVertexShader(filePath);
+}
+
+bool D3D11Base::addVertexShader(const LPWSTR filePath, const UINT numElements, const D3D11_INPUT_ELEMENT_DESC* layout)
 {
 	ID3DBlob* pErrorBlob = nullptr;
 
 	ID3DBlob* pVSBlob = nullptr;
-	HRESULT hr = D3DCompileFromFile(fileName, nullptr, INCLUDE_HANDLER,
+	HRESULT hr = D3DCompileFromFile(filePath, nullptr, INCLUDE_HANDLER,
 		"main", "vs_5_0", 0, 0, &pVSBlob, &pErrorBlob);
 	if (FAILED(hr))
 	{
@@ -109,8 +114,10 @@ bool D3D11Base::AddVertexShader(const LPWSTR fileName, const UINT numElements, c
 	mDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &vertexShader);
 	mVertexShaders->push_back(vertexShader);
 
-
-	hr = mDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mInputLayout);
+	if (layout != nullptr) {
+		hr = mDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mInputLayout);
+	}
+	
 
 
 	pVSBlob->Release();
@@ -124,12 +131,12 @@ bool D3D11Base::AddVertexShader(const LPWSTR fileName, const UINT numElements, c
 	return true;
 }
 
-bool D3D11Base::AddPixelShader(const LPWSTR fileName)
+bool D3D11Base::AddPixelShader(const LPWSTR filePath)
 {
 	ID3DBlob* pErrorBlob = nullptr;
 	ID3DBlob* pPSBlob = nullptr;
 
-	HRESULT hr = D3DCompileFromFile(fileName, nullptr, INCLUDE_HANDLER,
+	HRESULT hr = D3DCompileFromFile(filePath, nullptr, INCLUDE_HANDLER,
 		"main", "ps_5_0", 0, 0, &pPSBlob, &pErrorBlob);
 	if (FAILED(hr))
 	{
