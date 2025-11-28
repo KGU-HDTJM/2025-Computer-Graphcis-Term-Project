@@ -57,6 +57,7 @@ bool D3D11Base::Initialize(HWND hWnd)
 		AddPixelShader((const LPWSTR)L"defaultPixelShader.hlsl");
 	}
 
+	createConstBuffers(width, height);
 
 	return true;
 
@@ -77,6 +78,27 @@ ID3D11Device* D3D11Base::GetDevice(void) const
 ID3D11DeviceContext* D3D11Base::GetImmediateContext(void) const
 {
 	return mImmediateContext;
+}
+
+ID3D11RenderTargetView* D3D11Base::GetRenderTargetView(void) const {
+	return mRenderTargetView;
+}
+
+ID3D11DepthStencilView* D3D11Base::GetDepthStencilView(void) const {
+	return mDepthStencilView;
+}
+
+ID3D11Buffer* D3D11Base::GetChangeOnResizeBuffer(void) const {
+	return mCBChangeOnResize;
+}
+
+ID3D11Buffer* D3D11Base::GetNeverChangeBuffer(void) const {
+	return mCBNeverChanges;
+}
+
+ID3D11Buffer* D3D11Base::GetCBChangeEveryFrame(void) const
+{
+	return mCBChangesEveryFrame;
 }
 
 bool D3D11Base::AddVertexShader(const LPWSTR filePath)
@@ -166,6 +188,58 @@ bool D3D11Base::AddPixelShader(const LPWSTR filePath)
 	}
 
 	return true;
+}
+
+ID3D11VertexShader* D3D11Base::GetVertexShader(const eShaderID id) const
+{
+	return (*mVertexShaders)[(int)id];
+}
+
+ID3D11PixelShader* D3D11Base::GetPixelShader(const eShaderID id) const 
+{
+	return (*mPixelShaders)[(int)id];
+}
+
+void D3D11Base::OnResize(UINT width, UINT height)
+{
+	if (mDevice == nullptr || mSwapChain == nullptr)
+	{
+		return;
+	}
+
+	mImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
+	mImmediateContext->Flush();
+
+	if (mDepthStencil) { mDepthStencil->Release(); }
+	if (mDepthStencilView) { mDepthStencilView->Release(); }
+	if (mRenderTargetView) { mRenderTargetView->Release(); }
+
+	HRESULT hr;
+
+	XMMATRIX projection = XMMatrixPerspectiveLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
+
+	hr = mSwapChain->ResizeBuffers(1, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+	if (FAILED(hr))
+	{
+		goto LB_FAILED_CREATE_SWAPCHAIN;
+	}
+
+	if (!createRenderTargets(width, height))
+	{
+		goto LB_FAILED_CREATE_RENDER_TARGETS;
+	}
+
+	mCBResize.Projection = XMMatrixTranspose(projection);
+	mImmediateContext->UpdateSubresource(mCBChangeOnResize, 0, nullptr, &mCBResize, 0, 0);
+
+	return;
+
+LB_FAILED_CREATE_RENDER_TARGETS:
+	MessageBoxA(nullptr, "render targets creation failure", "Error", MB_OK);
+LB_FAILED_CREATE_SWAPCHAIN:
+	MessageBoxA(nullptr, "swapchain creation failure", "Error", MB_OK);
+
+	assert(false);
 }
 
 void D3D11Base::Cleanup(void)
@@ -265,6 +339,23 @@ bool D3D11Base::createDeviceAndSwapChain(HWND hWnd, UINT width, UINT height)
 	}
 	return true;
 }
+
+void D3D11Base::createConstBuffers(UINT width, UINT height)
+{
+	XMVECTOR eye = XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
+	XMVECTOR at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+	XMMATRIX view = XMMatrixLookAtLH(eye, at, up);
+
+	mConstantBuffer.View = XMMatrixTranspose(view);
+	mImmediateContext->UpdateSubresource(mCBNeverChanges, 0, nullptr, &mConstantBuffer, 0, 0);
+
+	XMMATRIX projection = XMMatrixPerspectiveLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
+	mCBResize.Projection = XMMatrixTranspose(projection);
+
+	mImmediateContext->UpdateSubresource(mCBChangeOnResize, 0, nullptr, &mCBResize, 0, 0);
+}
+
 
 bool D3D11Base::createRenderTargets(UINT width, UINT height)
 {
