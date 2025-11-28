@@ -25,9 +25,6 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
-		mConstantBuffer.View = XMMatrixIdentity();
-		mCBResize.Projection = XMMatrixIdentity();
-		mCBFrame.World = XMMatrixIdentity();
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);
@@ -63,21 +60,6 @@ private:
 	ID3D11Buffer* mCBNeverChanges = nullptr;
 	ID3D11Buffer* mCBChangeOnResize = nullptr;
 	ID3D11Buffer* mCBChangesEveryFrame = nullptr;
-
-	struct CBChangesEveryFrame
-	{
-		XMMATRIX World;
-	} mCBFrame;
-
-	struct CBNeverChanges
-	{
-		XMMATRIX View;
-	} mConstantBuffer;
-
-	struct CBChangeOnResize
-	{
-		XMMATRIX Projection;
-	} mCBResize;
 
 };
 
