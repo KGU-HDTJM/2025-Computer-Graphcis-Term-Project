@@ -17,6 +17,12 @@ using namespace eastl;
 
 ID3DInclude* const INCLUDE_HANDLER = D3D_COMPILE_STANDARD_FILE_INCLUDE;
 
+enum class eShaderID
+{
+	Basic,
+	Count
+};
+
 class D3D11Base
 {
 public:
@@ -25,21 +31,31 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
+		mVertexShaders->resize((size_t)eShaderID::Count);
+		mPixelShaders->resize((size_t)eShaderID::Count);
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);
+	bool AddVertexShader(const LPWSTR filePath);
+	bool AddPixelShader(const LPWSTR filePath);
+	void OnResize(UINT widht, UINT height);
+	void Cleanup(void);
+	
 	ID3D11Device* GetDevice(void) const;
 	ID3D11DeviceContext* GetImmediateContext(void) const;
 	ID3D11RenderTargetView* GetRenderTargetView(void) const;
 	ID3D11DepthStencilView* GetDepthStencilView(void) const;
-	bool AddVertexShader(const LPWSTR filePath);
-	bool AddPixelShader(const LPWSTR filePath);
-	void Cleanup(void);
+	ID3D11VertexShader* GetVertexShader(const eShaderID id) const;
+	ID3D11PixelShader* GetPixelShader(const eShaderID id) const;
+	ID3D11Buffer* GetNeverChangeBuffer(void) const;
+	ID3D11Buffer* GetChangeOnResizeBuffer(void) const;
+	ID3D11Buffer* GetCBChangeEveryFrame(void) const;
 
 private:
 	bool getMaxVideoMemoryAdapter(void);
 	bool createDeviceAndSwapChain(HWND hWnd, UINT width, UINT height);
 	bool createRenderTargets(UINT width, UINT height);
+	void createConstBuffers(UINT width, UINT height);
 	void setFullSizeViewport(UINT width, UINT height);
 	bool addVertexShader(const LPWSTR filePath, const UINT numElements = 0, const D3D11_INPUT_ELEMENT_DESC* layoutOrNULL = nullptr);
 
@@ -62,6 +78,16 @@ private:
 	ID3D11Buffer* mCBNeverChanges = nullptr;
 	ID3D11Buffer* mCBChangeOnResize = nullptr;
 	ID3D11Buffer* mCBChangesEveryFrame = nullptr;
+
+	struct CBNeverChanges
+	{
+		XMMATRIX View;
+	} mConstantBuffer;
+
+	struct CBChangeOnResize
+	{
+		XMMATRIX Projection;
+	}mCBResize;
 };
 
 #endif
