@@ -6,11 +6,14 @@ class Sphere
 {
 public:
 	Sphere(D3D11Base* base);
+public:
+
+	ID3D11VertexShader* sVertexShader;
+	ID3D11HullShader* sHullShader;
+	ID3D11DomainShader* sDomainShader;
+	ID3D11PixelShader* sPixelShader;
 private:
 	D3D11Base* mBase;
 	
-	static ID3D11VertexShader* msVertexShader;
-	static ID3D11HullShader* msHullShader;
-	static ID3D11DomainShader* msDomainShader;
 };
 

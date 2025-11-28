@@ -122,13 +122,13 @@ ID3D11RasterizerState* D3D11Base::GetRasterState(void) const {
 	return mRasterState;
 }
 
-ID3DBlob* D3D11Base::CompileShader(const LPWSTR filePath, const LPCSTR entryPoint, const LPCSTR target) const
+ID3DBlob* D3D11Base::CompileShader(const LPWSTR filePath, /*const LPCSTR entryPoint,*/ const LPCSTR target) const
 {
 	ID3DBlob* pErrorBlob = nullptr;
 	ID3DBlob* pShaderBlob = nullptr;
 
 	HRESULT hr = D3DCompileFromFile(filePath, nullptr, INCLUDE_HANDLER,
-		entryPoint, target, 0, 0, &pShaderBlob, &pErrorBlob);
+		"main", target, 0, 0, &pShaderBlob, &pErrorBlob);
 	if (FAILED(hr))
 	{
 		if (pErrorBlob)
@@ -158,7 +158,7 @@ bool D3D11Base::AddVertexShader(const LPWSTR filePath)
 bool D3D11Base::addVertexShader(const LPWSTR filePath, const UINT numElements, const D3D11_INPUT_ELEMENT_DESC* layout)
 {
 	HRESULT hr;
-	ID3DBlob* pVSBlob = CompileShader(filePath, "main", "vs_5_0");
+	ID3DBlob* pVSBlob = CompileShader(filePath, "vs_5_0");
 	if (pVSBlob == nullptr) {
 		return false;
 	}
@@ -184,7 +184,7 @@ bool D3D11Base::addVertexShader(const LPWSTR filePath, const UINT numElements, c
 bool D3D11Base::AddPixelShader(const LPWSTR filePath)
 {
 	HRESULT hr = NULL;
-	ID3DBlob* pPSBlob = CompileShader(filePath, "main", "ps_5_0");
+	ID3DBlob* pPSBlob = CompileShader(filePath, "ps_5_0");
 	ID3D11PixelShader* pixelShader = nullptr;
 	if (pPSBlob == nullptr) {
 		return false;

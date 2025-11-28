@@ -53,7 +53,7 @@ public:
 	ID3D11Buffer* GetCBChangeEveryFrame(void) const;
 	IDXGISwapChain* GetSwapChain(void) const;
 	ID3D11RasterizerState* GetRasterState(void) const;
-	ID3DBlob* CompileShader(const LPWSTR filePath, const LPCSTR entryPoint, const LPCSTR target) const;
+	ID3DBlob* CompileShader(const LPWSTR filePath, /*const LPCSTR entryPoint,*/ const LPCSTR target) const;
 
 private:
 	bool getMaxVideoMemoryAdapter(void);

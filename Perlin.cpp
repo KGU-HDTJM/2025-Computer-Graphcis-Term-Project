@@ -1,6 +1,5 @@
 ﻿#include"Perlin.h"
 
-#include<ctime>
 #include<cstdlib>
 #include<iostream>
 
