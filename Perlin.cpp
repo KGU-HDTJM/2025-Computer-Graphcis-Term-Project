@@ -69,7 +69,7 @@ void Perlin::createNoise(int x, int y, int scale)
 			float result = lerp(u, v, standX);
 
 			Vertex node;
-			node.pos = { x, y, result, 1 };
+			node.pos = { static_cast<float>(x), static_cast<float>(y), result, 1 };
 			XMVECTOR posVec = XMLoadFloat4(&node.pos);
 			XMVECTOR norVec = XMVector3Normalize(posVec);
 			XMStoreFloat4(&node.nor, norVec);
@@ -90,9 +90,7 @@ void Perlin::createNoise(int x, int y, int scale)
 			mIndices.push_back(p01);
 			mIndices.push_back(p11);
 
-			int p00 = i + x * scale * j;
 			int p10 = i + x * scale * (j + 1);
-			int p11 = i + 1 + x * scale * (j + 1);
 			mIndices.push_back(p00);
 			mIndices.push_back(p10);
 			mIndices.push_back(p11);

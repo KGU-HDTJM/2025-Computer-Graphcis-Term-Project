@@ -3,6 +3,7 @@
 #include<d3d11.h>
 #include<DirectXMath.h>
 #include<EASTL/vector.h>
+#include<ctime>
 
 class Perlin
 {
@@ -11,10 +12,10 @@ public:
 	Perlin(void) : mDevice(nullptr), mImmediateContext(nullptr), mIndexBuffer(nullptr), mVertexBuffer(nullptr){}
 	Perlin(ID3D11Device* _Device, ID3D11DeviceContext* _ImmediateContext, const int _x, const int _y, const int _scale) : mDevice(_Device), mImmediateContext(_ImmediateContext)
 	{
-		srand(static_cast<uint32_t>(time(nullptr)));
+		srand(static_cast<uint32_t>(std::time(nullptr)));
 
 		createNoise(_x, _y, _scale);
-		if (!createBuffers)
+		if (!createBuffers())
 		{
 			MessageBoxA(nullptr, "Failed to create index and vertex buffer", "Error", MB_OK);
 			assert(false);
