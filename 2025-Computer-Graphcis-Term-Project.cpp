@@ -197,5 +197,5 @@ void RenderFrame(const ID3D11Buffer* _vertexBuffer, const ID3D11Buffer* _indexBu
     ID3D11Device* device = base.GetDevice();
     ID3D11DeviceContext* immediateContext = base.GetImmediateContext();
 
-    immediateContext->ClearRenderTargetView()
+    //immediateContext->ClearRenderTargetView();
 }

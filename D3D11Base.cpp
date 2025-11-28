@@ -101,6 +101,34 @@ ID3D11Buffer* D3D11Base::GetCBChangeEveryFrame(void) const
 	return mCBChangesEveryFrame;
 }
 
+ID3DBlob* D3D11Base::CompileShader(const LPWSTR filePath, const LPCSTR entryPoint, const LPCSTR target) const
+{
+	ID3DBlob* pErrorBlob = nullptr;
+	ID3DBlob* pShaderBlob = nullptr;
+
+	HRESULT hr = D3DCompileFromFile(filePath, nullptr, INCLUDE_HANDLER,
+		entryPoint, target, 0, 0, &pShaderBlob, &pErrorBlob);
+	if (FAILED(hr))
+	{
+		if (pErrorBlob)
+		{
+			MessageBoxA(NULL, (char*)pErrorBlob->GetBufferPointer(), "Error", MB_OK);
+			pErrorBlob->Release();
+		}
+		if (pShaderBlob)
+		{
+			pShaderBlob->Release();
+		}
+		return nullptr;
+	}
+	if (pErrorBlob)
+	{
+		pErrorBlob->Release();
+		pErrorBlob = nullptr;
+	}
+	return pShaderBlob;
+}
+
 bool D3D11Base::AddVertexShader(const LPWSTR filePath)
 {
 	return addVertexShader(filePath);
@@ -108,46 +136,24 @@ bool D3D11Base::AddVertexShader(const LPWSTR filePath)
 
 bool D3D11Base::addVertexShader(const LPWSTR filePath, const UINT numElements, const D3D11_INPUT_ELEMENT_DESC* layout)
 {
-	ID3DBlob* pErrorBlob = nullptr;
-
-	ID3DBlob* pVSBlob = nullptr;
-	HRESULT hr = D3DCompileFromFile(filePath, nullptr, INCLUDE_HANDLER,
-		"main", "vs_5_0", 0, 0, &pVSBlob, &pErrorBlob);
-	if (FAILED(hr))
-	{
-		if (pErrorBlob)
-		{
-			MessageBoxA(NULL, (char*)pErrorBlob->GetBufferPointer(), "Failed Compile Vertex Shader", MB_OK);
-			pErrorBlob->Release();
-		}
-		if (pVSBlob)
-		{
-			pVSBlob->Release();
-		}
+	HRESULT hr;
+	ID3DBlob* pVSBlob = CompileShader(filePath, "main", "vs_5_0");
+	if (pVSBlob == nullptr) {
 		return false;
 	}
-
-	if (pErrorBlob)
-	{
-		pErrorBlob->Release();
-		pErrorBlob = nullptr;
-	}
-
 	ID3D11VertexShader* vertexShader = nullptr;
 	mDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &vertexShader);
 	mVertexShaders->push_back(vertexShader);
 
 	if (layout != nullptr) {
 		hr = mDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mInputLayout);
+		if (FAILED(hr)) {
+			pVSBlob->Release();
+			return false;
+		}
 	}
-	
-
 
 	pVSBlob->Release();
-	if (FAILED(hr))
-	{
-		return false;
-	}
 
 	// Set the input layout
 	mImmediateContext->IASetInputLayout(mInputLayout);
@@ -156,35 +162,18 @@ bool D3D11Base::addVertexShader(const LPWSTR filePath, const UINT numElements, c
 
 bool D3D11Base::AddPixelShader(const LPWSTR filePath)
 {
-	ID3DBlob* pErrorBlob = nullptr;
-	ID3DBlob* pPSBlob = nullptr;
-
-	HRESULT hr = D3DCompileFromFile(filePath, nullptr, INCLUDE_HANDLER,
-		"main", "ps_5_0", 0, 0, &pPSBlob, &pErrorBlob);
-	if (FAILED(hr))
-	{
-		if (pErrorBlob)
-		{
-			MessageBoxA(NULL, (char*)pErrorBlob->GetBufferPointer(), "Error", MB_OK);
-			pErrorBlob->Release();
-		}
-		if (pPSBlob)
-		{
-			pPSBlob->Release();
-		}
+	HRESULT hr;
+	ID3DBlob* pPSBlob = CompileShader(filePath, "main", "ps_5_0");
+	ID3D11PixelShader* pixelShader = nullptr;
+	if (pPSBlob == nullptr) {
 		return false;
 	}
-	ID3D11PixelShader* pixelShader = nullptr;
 	mDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &pixelShader);
 	mPixelShaders->push_back(pixelShader);
+	
 	if (pPSBlob)
 	{
 		pPSBlob->Release();
-	}
-	if (pErrorBlob)
-	{
-		pErrorBlob->Release();
-		pErrorBlob = nullptr;
 	}
 
 	return true;

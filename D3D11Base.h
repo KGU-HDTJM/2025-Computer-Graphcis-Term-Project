@@ -31,8 +31,6 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
-		mVertexShaders->resize((size_t)eShaderID::Count);
-		mPixelShaders->resize((size_t)eShaderID::Count);
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);
@@ -50,6 +48,7 @@ public:
 	ID3D11Buffer* GetNeverChangeBuffer(void) const;
 	ID3D11Buffer* GetChangeOnResizeBuffer(void) const;
 	ID3D11Buffer* GetCBChangeEveryFrame(void) const;
+	ID3DBlob* CompileShader(const LPWSTR filePath, const LPCSTR entryPoint, const LPCSTR target) const;
 
 private:
 	bool getMaxVideoMemoryAdapter(void);
