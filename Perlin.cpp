@@ -64,12 +64,15 @@ void Perlin::createNoise(int x, int y, int scale)
 			float p01 = (0 - standX) * cosf(randDir[i01]) + (1 - standY) * sinf(randDir[i01]);
 			float p11 = (1 - standX) * cosf(randDir[i11]) + (1 - standY) * sinf(randDir[i11]);
 
-			float u = lerp(p00, p01, standY);
-			float v = lerp(p10, p11, standY);
-			float result = lerp(u, v, standX);
+			float u = fade(standX);
+			float v = fade(standY);
+
+			float n0 = lerp(p00, p01, v);
+			float n1 = lerp(p10, p11, v);
+			float result = lerp(n0, n1, u);
 
 			Vertex node;
-			node.pos = { static_cast<float>(x), static_cast<float>(y), result, 1 };
+			node.pos = { static_cast<float>(i), static_cast<float>(j), result, 1.0f };
 			XMVECTOR posVec = XMLoadFloat4(&node.pos);
 			XMVECTOR norVec = XMVector3Normalize(posVec);
 			XMStoreFloat4(&node.nor, norVec);
@@ -85,12 +88,13 @@ void Perlin::createNoise(int x, int y, int scale)
 		{
 			int p00 = i + x * scale * j;
 			int p01 = i + 1 + x * scale * j;
+			int p10 = i + x * scale * (j + 1);
 			int p11 = i + 1 + x * scale * (j + 1);
+
 			mIndices.push_back(p00);
 			mIndices.push_back(p01);
 			mIndices.push_back(p11);
 
-			int p10 = i + x * scale * (j + 1);
 			mIndices.push_back(p00);
 			mIndices.push_back(p10);
 			mIndices.push_back(p11);

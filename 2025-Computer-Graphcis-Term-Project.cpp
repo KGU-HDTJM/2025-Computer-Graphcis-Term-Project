@@ -8,12 +8,17 @@
 #include <d3dcompiler.h>
 #include <DirectXMath.h>
 
+#include"D3D11Base.h"
+#include"Perlin.h"
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+D3D11Base base;
+
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -181,4 +186,16 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+
+void RenderFrame(const ID3D11Buffer* _vertexBuffer, const ID3D11Buffer* _indexBuffer, 
+    const ID3D11SamplerState* sampler, const LPWSTR vsFilePaht, const LPWSTR psFilePath)
+{
+    const float BG_COLOR[] = { 0.0f, 0.125f, 0.3f, 1.0f };
+    
+    ID3D11Device* device = base.GetDevice();
+    ID3D11DeviceContext* immediateContext = base.GetImmediateContext();
+
+    immediateContext->ClearRenderTargetView()
 }

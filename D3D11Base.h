@@ -30,6 +30,8 @@ public:
 	bool Initialize(HWND hWnd);
 	ID3D11Device* GetDevice(void) const;
 	ID3D11DeviceContext* GetImmediateContext(void) const;
+	ID3D11RenderTargetView* GetRenderTargetView(void) const;
+	ID3D11DepthStencilView* GetDepthStencilView(void) const;
 	bool AddVertexShader(const LPWSTR filePath);
 	bool AddPixelShader(const LPWSTR filePath);
 	void Cleanup(void);
@@ -60,7 +62,6 @@ private:
 	ID3D11Buffer* mCBNeverChanges = nullptr;
 	ID3D11Buffer* mCBChangeOnResize = nullptr;
 	ID3D11Buffer* mCBChangesEveryFrame = nullptr;
-
 };
 
 #endif
