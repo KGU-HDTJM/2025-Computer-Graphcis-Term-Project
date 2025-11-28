@@ -22,9 +22,16 @@ public:
 		}
 	}
 
+	~Perlin()
+	{
+		if (mVertexBuffer) { mVertexBuffer->Release(); }
+		if (mIndexBuffer) { mIndexBuffer->Release();   }
+	}
+
 	size_t GetIndexCount(void);
 	ID3D11Buffer* GetIndexBuffer(void);
 	ID3D11Buffer* GetVertexBuffer(void);
+	size_t GetVertexSize(void) const;
 
 private:
 
@@ -44,7 +51,7 @@ private:
 		DirectX::XMFLOAT4 nor;
 	};
 
-	eastl::vector<int> mIndices;
+	eastl::vector<uint32_t> mIndices;
 	eastl::vector<Vertex> mVertices;
 	
 };

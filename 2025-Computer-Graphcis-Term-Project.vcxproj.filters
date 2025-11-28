@@ -77,7 +77,6 @@
     <FxCompile Include="sphere.vs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="hlsl sphere.ds.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="common.hlsli">

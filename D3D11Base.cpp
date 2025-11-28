@@ -42,6 +42,17 @@ bool D3D11Base::Initialize(HWND hWnd)
 		goto LB_FAILED_CREATE_RENDER_TARGETS;
 	}
 
+	if (!createConstBuffers(width, height))
+	{
+		goto LB_FAILED_CREATE_CONST_BUFFERS;
+	}
+
+	if (!createRasterizer())
+	{
+		goto LB_FAILED_CREATE_RASTER_STATE;
+	}
+
+
 	{
 		// Default input layout
 		D3D11_INPUT_ELEMENT_DESC layout[] =
@@ -50,17 +61,19 @@ bool D3D11Base::Initialize(HWND hWnd)
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 }, 
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
-		UINT numElements = ARRAYSIZE(layout);
+		UINT numElements = ARRAYSIZE(layout);	
 		mVertexShaders = new vector<ID3D11VertexShader*>();
-		bool success = addVertexShader((const LPWSTR)L"defaultVertexShader.hlsl", numElements, layout);
 		mPixelShaders = new vector<ID3D11PixelShader*>();
+		bool success = addVertexShader((const LPWSTR)L"defaultVertexShader.hlsl", numElements, layout);
 		AddPixelShader((const LPWSTR)L"defaultPixelShader.hlsl");
 	}
 
-	createConstBuffers(width, height);
+	setFullSizeViewport(width, height);
 
 	return true;
 
+LB_FAILED_CREATE_RASTER_STATE:
+LB_FAILED_CREATE_CONST_BUFFERS:
 LB_FAILED_CREATE_RENDER_TARGETS:
 	mSwapChain->Release();
 	mDevice->Release();
@@ -101,7 +114,15 @@ ID3D11Buffer* D3D11Base::GetCBChangeEveryFrame(void) const
 	return mCBChangesEveryFrame;
 }
 
-ID3DBlob* D3D11Base::CompileShader(const LPWSTR filePath, const LPCSTR entryPoint, const LPCSTR target) const
+IDXGISwapChain* D3D11Base::GetSwapChain(void) const {
+	return mSwapChain;
+}
+
+ID3D11RasterizerState* D3D11Base::GetRasterState(void) const {
+	return mRasterState;
+}
+
+bool D3D11Base::AddVertexShader(const LPWSTR filePath)
 {
 	ID3DBlob* pErrorBlob = nullptr;
 	ID3DBlob* pShaderBlob = nullptr;
@@ -329,20 +350,66 @@ bool D3D11Base::createDeviceAndSwapChain(HWND hWnd, UINT width, UINT height)
 	return true;
 }
 
-void D3D11Base::createConstBuffers(UINT width, UINT height)
+bool D3D11Base::createConstBuffers(UINT width, UINT height)
 {
-	XMVECTOR eye = XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f);
-	XMVECTOR at = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	HRESULT hr;
+	
+	XMVECTOR eye = XMVectorSet(20.0f, 23.0f, -10.0f, 0.0f); 
+	XMVECTOR at = XMVectorSet(20.0f, 23.0f, 0.0f, 0.0f);  
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMMATRIX view = XMMatrixLookAtLH(eye, at, up);
 
 	mConstantBuffer.View = XMMatrixTranspose(view);
-	mImmediateContext->UpdateSubresource(mCBNeverChanges, 0, nullptr, &mConstantBuffer, 0, 0);
 
 	XMMATRIX projection = XMMatrixPerspectiveLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
 	mCBResize.Projection = XMMatrixTranspose(projection);
 
+	D3D11_BUFFER_DESC bufferDesc;
+	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
+
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	bufferDesc.CPUAccessFlags = 0;
+
+	D3D11_SUBRESOURCE_DATA initData;
+	ZeroMemory(&initData, sizeof(initData));
+	
+	bufferDesc.ByteWidth = sizeof(mConstantBuffer);
+	initData.pSysMem = &mConstantBuffer;
+
+	hr = mDevice->CreateBuffer(&bufferDesc, &initData, &mCBNeverChanges);
+	if (FAILED(hr))
+	{
+		goto LB_FAILED_CREAET_NEVER_CHANGE_BUFFER;
+	}
+
+	bufferDesc.ByteWidth = sizeof(mCBResize);
+	initData.pSysMem = &mCBResize;
+
+	hr = mDevice->CreateBuffer(&bufferDesc, &initData, &mCBChangeOnResize);
+	if (FAILED(hr))
+	{
+		goto LB_FAILED_CREATE_CHANGE_ON_RESIZE_BUFFER;
+	}
+
+	bufferDesc.ByteWidth = sizeof(mCBFrame);
+
+	hr = mDevice->CreateBuffer(&bufferDesc, nullptr, &mCBChangesEveryFrame);
+	if (FAILED(hr))
+	{
+		goto LB_FAILED_CREATE_CHANGE_EVERY_FRAME_BUFFER;
+	}
+
 	mImmediateContext->UpdateSubresource(mCBChangeOnResize, 0, nullptr, &mCBResize, 0, 0);
+	mImmediateContext->UpdateSubresource(mCBNeverChanges, 0, nullptr, &mConstantBuffer, 0, 0);
+
+	return true;
+LB_FAILED_CREATE_CHANGE_EVERY_FRAME_BUFFER:
+	mCBChangeOnResize->Release();
+LB_FAILED_CREATE_CHANGE_ON_RESIZE_BUFFER:
+	mCBNeverChanges->Release();
+LB_FAILED_CREAET_NEVER_CHANGE_BUFFER:
+	return false;
 }
 
 
@@ -401,6 +468,31 @@ LB_FAILED_CREATE_DEPTH_STENCIL:
 	mRenderTargetView->Release();
 LB_FAILED_CREATE_RENDER_TARGET_VIEW:
 	return false;
+}
+
+bool D3D11Base::createRasterizer(void) 
+{
+	HRESULT hr;
+
+	D3D11_RASTERIZER_DESC rasterDesc;
+	rasterDesc.FillMode = D3D11_FILL_SOLID;
+	rasterDesc.CullMode = D3D11_CULL_NONE;
+	rasterDesc.FrontCounterClockwise = FALSE;
+	rasterDesc.DepthBias = 0;
+	rasterDesc.DepthBiasClamp = 0.0f;
+	rasterDesc.SlopeScaledDepthBias = 0.0f;
+	rasterDesc.DepthClipEnable = TRUE;
+	rasterDesc.ScissorEnable = FALSE;
+	rasterDesc.MultisampleEnable = FALSE;
+	rasterDesc.AntialiasedLineEnable = FALSE;
+
+	hr = mDevice->CreateRasterizerState(&rasterDesc, &mRasterState);
+	if (FAILED(hr))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void D3D11Base::setFullSizeViewport(UINT width, UINT height)

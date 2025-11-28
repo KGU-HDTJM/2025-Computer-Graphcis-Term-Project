@@ -315,7 +315,6 @@
     <None Include="common.hlsli" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="hlsl sphere.ds.hlsl" />
     <FxCompile Include="sphere.ds.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|x64'">Domain</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|x64'">5.0</ShaderModel>

@@ -5,7 +5,6 @@
 #include "2025-Computer-Graphcis-Term-Project.h"
 
 #include <d3d11.h>
-#include <d3dcompiler.h>
 #include <DirectXMath.h>
 
 #include"D3D11Base.h"
@@ -17,14 +16,17 @@
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-D3D11Base base;
+HWND g_hWnd;
 
+D3D11Base base;
+Perlin* perlin;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+void RenderFrame(ID3D11Buffer*, ID3D11Buffer*, const ID3D11SamplerState*, const eShaderID, const eShaderID);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -49,15 +51,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY2025COMPUTERGRAPHCISTERMPROJECT));
 
-    MSG msg;
+    MSG msg = { 0 };
+
+    base.Initialize(g_hWnd);
+    perlin = new Perlin(base.GetDevice(), base.GetImmediateContext(), 10, 10, 4);
 
     // Main message loop:
-    while (GetMessage(&msg, nullptr, 0, 0))
+    while (WM_QUIT != msg.message)
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
+        }
+        else
+        {
+            RenderFrame(perlin->GetVertexBuffer(), perlin->GetIndexBuffer(), nullptr, eShaderID::Basic, eShaderID::Basic);
         }
     }
 
@@ -106,16 +115,16 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+   g_hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
-   if (!hWnd)
+   if (!g_hWnd)
    {
       return FALSE;
    }
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
+   ShowWindow(g_hWnd, nCmdShow);
+   UpdateWindow(g_hWnd);
 
    return TRUE;
 }
@@ -189,13 +198,50 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
-void RenderFrame(const ID3D11Buffer* _vertexBuffer, const ID3D11Buffer* _indexBuffer, 
-    const ID3D11SamplerState* sampler, const LPWSTR vsFilePaht, const LPWSTR psFilePath)
+void RenderFrame(ID3D11Buffer* _vertexBuffer, ID3D11Buffer* _indexBuffer, 
+    const ID3D11SamplerState* sampler, const eShaderID vsID, const eShaderID psID) 
 {
     const float BG_COLOR[] = { 0.0f, 0.125f, 0.3f, 1.0f };
     
     ID3D11Device* device = base.GetDevice();
     ID3D11DeviceContext* immediateContext = base.GetImmediateContext();
+    IDXGISwapChain* swapChain = base.GetSwapChain();
 
-    //immediateContext->ClearRenderTargetView();
+
+    immediateContext->ClearRenderTargetView(base.GetRenderTargetView(), BG_COLOR);
+    immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+    
+    ID3D11Buffer* changeEveryFrame = base.GetCBChangeEveryFrame();
+
+    struct CBChangeEveryFrame
+    {
+        XMMATRIX World;
+    }CBFrame;
+
+    CBFrame.World = XMMatrixTranspose(XMMatrixIdentity());
+
+    immediateContext->UpdateSubresource(changeEveryFrame, 0, nullptr, &CBFrame, 0, 0);
+
+    ID3D11Buffer* neverChange = base.GetNeverChangeBuffer();
+    ID3D11Buffer* changeOnResize = base.GetChangeOnResizeBuffer();
+    
+
+    immediateContext->VSSetShader(base.GetVertexShader(vsID), nullptr, 0);
+    immediateContext->VSSetConstantBuffers(0, 1, &neverChange);
+    immediateContext->VSSetConstantBuffers(1, 1, &changeOnResize);
+    immediateContext->VSSetConstantBuffers(2, 1, &changeEveryFrame);
+    immediateContext->PSSetShader(base.GetPixelShader(psID), nullptr, 0);
+    immediateContext->PSSetConstantBuffers(0, 1, &changeEveryFrame);
+    immediateContext->RSSetState(base.GetRasterState());
+
+    UINT stride = perlin->GetVertexSize();
+    UINT offset = 0;
+
+    immediateContext->IASetVertexBuffers(0, 1, &_vertexBuffer, &stride, &offset);
+    immediateContext->IASetIndexBuffer(_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    immediateContext->DrawIndexed(static_cast<UINT>(perlin->GetIndexCount()), 0, 0);
+
+    swapChain->Present(1, 0);
 }
