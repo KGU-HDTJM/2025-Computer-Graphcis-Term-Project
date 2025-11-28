@@ -312,9 +312,19 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="common.hlsli" />
-  </ItemGroup>
-  <ItemGroup>
+    <FxCompile Include="default.ps.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='didvkahs-Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='didvkahs-Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='areian0511-Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='areian0511-Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|Win32'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="default.vs.hlsl" />
     <FxCompile Include="sphere.ds.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|x64'">Domain</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|x64'">5.0</ShaderModel>
@@ -359,6 +369,18 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|Win32'">Hull</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|Win32'">5.0</ShaderModel>
     </FxCompile>
+    <FxCompile Include="sphere.ps.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='didvkahs-Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='didvkahs-Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='areian0511-Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='areian0511-Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|Win32'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="sphere.vs.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='didvkahs-Debug|x64'">Vertex</ShaderType>
@@ -371,6 +393,10 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='areian0511-Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='brassgum-Debug-x64|Win32'">Vertex</ShaderType>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="default.common.hlsli" />
+    <None Include="sphere.common.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

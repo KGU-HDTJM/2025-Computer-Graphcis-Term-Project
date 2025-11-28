@@ -9,8 +9,8 @@ public:
 private:
 	D3D11Base* mBase;
 	
-	static ID3D11VertexShader* mVertexShader;
-	static ID3D11HullShader* mHullShader;
-	static ID3D11DomainShader* mDomainShader;
+	static ID3D11VertexShader* msVertexShader;
+	static ID3D11HullShader* msHullShader;
+	static ID3D11DomainShader* msDomainShader;
 };
 

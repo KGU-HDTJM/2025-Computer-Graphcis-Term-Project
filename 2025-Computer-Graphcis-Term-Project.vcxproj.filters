@@ -68,18 +68,30 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="sphere.ds.hlsl">
+    <FxCompile Include="sphere.vs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="sphere.hs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="sphere.vs.hlsl">
+    <FxCompile Include="sphere.ds.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="sphere.ps.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="default.vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="default.ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="common.hlsli">
+    <None Include="sphere.common.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="default.common.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

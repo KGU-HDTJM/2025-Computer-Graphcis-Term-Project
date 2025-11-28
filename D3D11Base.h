@@ -31,6 +31,9 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
+		mCBFrame.World = XMMatrixIdentity();
+		mCBResize.Projection = XMMatrixIdentity();
+		mConstantBuffer.View = XMMatrixIdentity();
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);
@@ -50,6 +53,7 @@ public:
 	ID3D11Buffer* GetCBChangeEveryFrame(void) const;
 	IDXGISwapChain* GetSwapChain(void) const;
 	ID3D11RasterizerState* GetRasterState(void) const;
+	ID3DBlob* CompileShader(const LPWSTR filePath, const LPCSTR entryPoint, const LPCSTR target) const;
 
 private:
 	bool getMaxVideoMemoryAdapter(void);

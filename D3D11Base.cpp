@@ -64,8 +64,8 @@ bool D3D11Base::Initialize(HWND hWnd)
 		UINT numElements = ARRAYSIZE(layout);	
 		mVertexShaders = new vector<ID3D11VertexShader*>();
 		mPixelShaders = new vector<ID3D11PixelShader*>();
-		bool success = addVertexShader((const LPWSTR)L"defaultVertexShader.hlsl", numElements, layout);
-		AddPixelShader((const LPWSTR)L"defaultPixelShader.hlsl");
+		bool success = addVertexShader((const LPWSTR)L"default.vs.hlsl", numElements, layout);
+		success = AddPixelShader((const LPWSTR)L"default.ps.hlsl");
 	}
 
 	setFullSizeViewport(width, height);
@@ -122,7 +122,7 @@ ID3D11RasterizerState* D3D11Base::GetRasterState(void) const {
 	return mRasterState;
 }
 
-bool D3D11Base::AddVertexShader(const LPWSTR filePath)
+ID3DBlob* D3D11Base::CompileShader(const LPWSTR filePath, const LPCSTR entryPoint, const LPCSTR target) const
 {
 	ID3DBlob* pErrorBlob = nullptr;
 	ID3DBlob* pShaderBlob = nullptr;
@@ -183,7 +183,7 @@ bool D3D11Base::addVertexShader(const LPWSTR filePath, const UINT numElements, c
 
 bool D3D11Base::AddPixelShader(const LPWSTR filePath)
 {
-	HRESULT hr;
+	HRESULT hr = NULL;
 	ID3DBlob* pPSBlob = CompileShader(filePath, "main", "ps_5_0");
 	ID3D11PixelShader* pixelShader = nullptr;
 	if (pPSBlob == nullptr) {
@@ -472,9 +472,10 @@ LB_FAILED_CREATE_RENDER_TARGET_VIEW:
 
 bool D3D11Base::createRasterizer(void) 
 {
-	HRESULT hr;
+	HRESULT hr = NULL;
 
 	D3D11_RASTERIZER_DESC rasterDesc;
+	ZeroMemory(&rasterDesc, sizeof(rasterDesc));
 	rasterDesc.FillMode = D3D11_FILL_SOLID;
 	rasterDesc.CullMode = D3D11_CULL_NONE;
 	rasterDesc.FrontCounterClockwise = FALSE;
