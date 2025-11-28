@@ -47,7 +47,8 @@ bool D3D11Base::Initialize(HWND hWnd)
 		D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 }, 
+			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
 		UINT numElements = ARRAYSIZE(layout);
 		mVertexShaders = new vector<ID3D11VertexShader*>();
@@ -191,7 +192,6 @@ void D3D11Base::Cleanup(void)
 	mImmediateContext->Release();
 	mSwapChain->Release();
 	mDevice->Release();
-	// ?
 	mAdapter->Release();
 }
 
