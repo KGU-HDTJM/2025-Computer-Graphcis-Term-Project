@@ -10,7 +10,6 @@
 #pragma comment(lib, "dxgi.lib")  
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dcompiler.lib")
-#pragma comment(lib, "DirectXTex.lib")
 
 using namespace DirectX;
 using namespace eastl;
@@ -31,8 +30,6 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
-		mVertexShaders->resize((size_t)eShaderID::Count);
-		mPixelShaders->resize((size_t)eShaderID::Count);
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);
@@ -40,7 +37,7 @@ public:
 	bool AddPixelShader(const LPWSTR filePath);
 	void OnResize(UINT widht, UINT height);
 	void Cleanup(void);
-	
+
 	ID3D11Device* GetDevice(void) const;
 	ID3D11DeviceContext* GetImmediateContext(void) const;
 	ID3D11RenderTargetView* GetRenderTargetView(void) const;
@@ -50,12 +47,13 @@ public:
 	ID3D11Buffer* GetNeverChangeBuffer(void) const;
 	ID3D11Buffer* GetChangeOnResizeBuffer(void) const;
 	ID3D11Buffer* GetCBChangeEveryFrame(void) const;
+	IDXGISwapChain* GetSwapChain(void) const;
 
 private:
 	bool getMaxVideoMemoryAdapter(void);
 	bool createDeviceAndSwapChain(HWND hWnd, UINT width, UINT height);
 	bool createRenderTargets(UINT width, UINT height);
-	void createConstBuffers(UINT width, UINT height);
+	bool createConstBuffers(UINT width, UINT height);
 	void setFullSizeViewport(UINT width, UINT height);
 	bool addVertexShader(const LPWSTR filePath, const UINT numElements = 0, const D3D11_INPUT_ELEMENT_DESC* layoutOrNULL = nullptr);
 
@@ -88,6 +86,11 @@ private:
 	{
 		XMMATRIX Projection;
 	}mCBResize;
+
+	struct CBChangeEveryFrame
+	{
+		XMMATRIX World;
+	}mCBFrame;
 };
 
 #endif

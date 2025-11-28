@@ -9,7 +9,7 @@
 #include <DirectXMath.h>
 
 #include"D3D11Base.h"
-#include"Perlin.h"
+#include"Cube.h"
 
 #define MAX_LOADSTRING 100
 
@@ -17,19 +17,22 @@
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-D3D11Base base;
+HWND g_hWnd;
 
+D3D11Base base;
+Cube* cube;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+void RenderFrame(ID3D11Buffer*, ID3D11Buffer*, const ID3D11SamplerState*, const eShaderID, const eShaderID);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+    _In_opt_ HINSTANCE hPrevInstance,
+    _In_ LPWSTR    lpCmdLine,
+    _In_ int       nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
@@ -42,26 +45,33 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     MyRegisterClass(hInstance);
 
     // Perform application initialization:
-    if (!InitInstance (hInstance, nCmdShow))
+    if (!InitInstance(hInstance, nCmdShow))
     {
         return FALSE;
     }
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY2025COMPUTERGRAPHCISTERMPROJECT));
 
-    MSG msg;
+    MSG msg = { 0 };
+
+    base.Initialize(g_hWnd);
+    cube = new Cube(base.GetDevice(), base.GetImmediateContext(), 20, 20, 20, 10);
 
     // Main message loop:
-    while (GetMessage(&msg, nullptr, 0, 0))
+    while (WM_QUIT != msg.message)
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+        else
+        {
+            RenderFrame(cube->GetVertexBuffer(), cube->GetIndexBuffer(), nullptr, eShaderID::Basic, eShaderID::Basic);
+        }
     }
 
-    return (int) msg.wParam;
+    return (int)msg.wParam;
 }
 
 
@@ -77,17 +87,17 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
     wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY2025COMPUTERGRAPHCISTERMPROJECT));
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_MY2025COMPUTERGRAPHCISTERMPROJECT);
-    wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    wcex.style = CS_HREDRAW | CS_VREDRAW;
+    wcex.lpfnWndProc = WndProc;
+    wcex.cbClsExtra = 0;
+    wcex.cbWndExtra = 0;
+    wcex.hInstance = hInstance;
+    wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY2025COMPUTERGRAPHCISTERMPROJECT));
+    wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY2025COMPUTERGRAPHCISTERMPROJECT);
+    wcex.lpszClassName = szWindowClass;
+    wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
     return RegisterClassExW(&wcex);
 }
@@ -104,20 +114,20 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // Store instance handle in our global variable
+    hInst = hInstance; // Store instance handle in our global variable
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+    g_hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
-   if (!hWnd)
-   {
-      return FALSE;
-   }
+    if (!g_hWnd)
+    {
+        return FALSE;
+    }
 
-   ShowWindow(hWnd, nCmdShow);
-   UpdateWindow(hWnd);
+    ShowWindow(g_hWnd, nCmdShow);
+    UpdateWindow(g_hWnd);
 
-   return TRUE;
+    return TRUE;
 }
 
 //
@@ -135,30 +145,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_COMMAND:
+    {
+        int wmId = LOWORD(wParam);
+        // Parse the menu selections:
+        switch (wmId)
         {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
+        case IDM_ABOUT:
+            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+            break;
+        case IDM_EXIT:
+            DestroyWindow(hWnd);
+            break;
+        default:
+            return DefWindowProc(hWnd, message, wParam, lParam);
         }
-        break;
+    }
+    break;
     case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
-            EndPaint(hWnd, &ps);
-        }
-        break;
+    {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+        // TODO: Add any drawing code that uses hdc here...
+        EndPaint(hWnd, &ps);
+    }
+    break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
@@ -189,13 +199,49 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 
-void RenderFrame(const ID3D11Buffer* _vertexBuffer, const ID3D11Buffer* _indexBuffer, 
-    const ID3D11SamplerState* sampler, const LPWSTR vsFilePaht, const LPWSTR psFilePath)
+void RenderFrame(ID3D11Buffer* _vertexBuffer, ID3D11Buffer* _indexBuffer,
+    const ID3D11SamplerState* sampler, const eShaderID vsID, const eShaderID psID)
 {
     const float BG_COLOR[] = { 0.0f, 0.125f, 0.3f, 1.0f };
-    
+
     ID3D11Device* device = base.GetDevice();
     ID3D11DeviceContext* immediateContext = base.GetImmediateContext();
+    IDXGISwapChain* swapChain = base.GetSwapChain();
 
-    immediateContext->ClearRenderTargetView()
+
+    immediateContext->ClearRenderTargetView(base.GetRenderTargetView(), BG_COLOR);
+    immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+    ID3D11Buffer* changeEveryFrame = base.GetCBChangeEveryFrame();
+
+    struct CBChangeEveryFrame
+    {
+        XMMATRIX World;
+    }CBFrame;
+
+    CBFrame.World = XMMatrixTranspose(XMMatrixIdentity());
+
+    immediateContext->UpdateSubresource(changeEveryFrame, 0, nullptr, &CBFrame, 0, 0);
+
+    ID3D11Buffer* neverChange = base.GetNeverChangeBuffer();
+    ID3D11Buffer* changeOnResize = base.GetChangeOnResizeBuffer();
+
+
+    immediateContext->VSSetShader(base.GetVertexShader(vsID), nullptr, 0);
+    immediateContext->VSSetConstantBuffers(0, 1, &neverChange);
+    immediateContext->VSSetConstantBuffers(1, 1, &changeOnResize);
+    immediateContext->VSSetConstantBuffers(2, 1, &changeEveryFrame);
+    immediateContext->PSSetShader(base.GetPixelShader(psID), nullptr, 0);
+    immediateContext->PSSetConstantBuffers(0, 1, &changeEveryFrame);
+
+    UINT stride = cube->GetVertexSize();
+    UINT offset = 0;
+
+    immediateContext->IASetVertexBuffers(0, 1, &_vertexBuffer, &stride, &offset);
+    immediateContext->IASetIndexBuffer(_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    immediateContext->DrawIndexed(static_cast<UINT>(cube->GetIndexCount()), 0, 0);
+
+    swapChain->Present(1, 0);
 }
