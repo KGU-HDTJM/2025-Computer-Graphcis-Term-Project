@@ -54,6 +54,7 @@ public:
 	IDXGISwapChain* GetSwapChain(void) const;
 	ID3D11RasterizerState* GetRasterState(void) const;
 	ID3DBlob* CompileShader(const LPWSTR filePath, /*const LPCSTR entryPoint,*/ const LPCSTR target) const;
+	ID3D11InputLayout* GetInputLayout(void) const;
 
 private:
 	bool getMaxVideoMemoryAdapter(void);

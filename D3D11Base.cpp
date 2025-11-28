@@ -150,6 +150,11 @@ ID3DBlob* D3D11Base::CompileShader(const LPWSTR filePath, /*const LPCSTR entryPo
 	return pShaderBlob;
 }
 
+ID3D11InputLayout* D3D11Base::GetInputLayout(void) const
+{
+	return mInputLayout;
+}
+
 bool D3D11Base::AddVertexShader(const LPWSTR filePath)
 {
 	return addVertexShader(filePath);

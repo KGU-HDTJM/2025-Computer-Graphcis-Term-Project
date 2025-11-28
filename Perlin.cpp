@@ -40,31 +40,47 @@ size_t Perlin::GetVertexSize(void) const
 
 void Perlin::createNoise(int x, int y, int scale)
 {
+	// Clear any existing data
+	mVertices.clear();
+	mIndices.clear();
+
 	eastl::vector<float> randDir;
 
+	// generate random directions for grid corners (coarse grid scaled by 'scale')
+	const int COARSE_W = x * 2 * scale;
+	const int COARSE_H = y * 2 * scale;
+	randDir.reserve(COARSE_W * COARSE_H);
 
-	for (int i = 0; i < y * 2 * scale * x * 2 * scale; ++i)
+	for (int i = 0; i < COARSE_W * COARSE_H; ++i)
 	{
-		float angle = rand() % 360 * PI / 180.0f;
+		float angle = (rand() % 360) * PI / 180.0f;
 		randDir.push_back(angle);
 	}
 
-	const int SCALED_Y = y * 2 * scale;
-	const int SCALED_X = x * 2 * scale;
+	const int GRID_WIDTH = x * scale;
+	const int GRID_HEIGHT = y * scale;
 
-	for (int j = 0; j < y * scale; ++j)
+	// store heights first
+	eastl::vector<float> heights;
+	heights.resize(GRID_WIDTH * GRID_HEIGHT);
+
+	for (int j = 0; j < GRID_HEIGHT; ++j)
 	{
-		for (int i = 0; i < x * scale; ++i)
+		for (int i = 0; i < GRID_WIDTH; ++i)
 		{
-			const float px = (float)i / (float)(x * scale);
-			const float py = (float)j / (float)(y * scale);
+			const float px = (float)i / (float)(GRID_WIDTH);
+			const float py = (float)j / (float)(GRID_HEIGHT);
 			float standX = px - floorf(px);
 			float standY = py - floorf(py);
 
-			int i00 = i * 2 +	  SCALED_X * j * 2;
-			int i01 = i * 2 +	  SCALED_X * (j * 2+ 1);
-			int i10 = i * 2 + 1 + SCALED_X * j * 2;
-			int i11 = i * 2 + 1 + SCALED_X * (j * 2 + 1);
+			// Map to indices into randDir: replicate earlier indexing intent but clipped to available data
+			int baseX = (i * 2) % COARSE_W;
+			int baseY = (j * 2) % COARSE_H;
+
+			int i00 = baseX + COARSE_W * baseY;
+			int i10 = (baseX + 1) + COARSE_W * baseY;
+			int i01 = baseX + COARSE_W * (baseY + 1 < COARSE_H ? baseY + 1 : baseY);
+			int i11 = (baseX + 1) + COARSE_W * (baseY + 1 < COARSE_H ? baseY + 1 : baseY);
 
 			float p00 = (0 - standX) * cosf(randDir[i00]) + (0 - standY) * sinf(randDir[i00]);
 			float p10 = (1 - standX) * cosf(randDir[i10]) + (0 - standY) * sinf(randDir[i10]);
@@ -78,23 +94,51 @@ void Perlin::createNoise(int x, int y, int scale)
 			float n1 = lerp(p10, p11, v);
 			float result = lerp(n0, n1, u);
 
-			float adjustHeight = (result + 1.0f) * 0.5f * 10 + 1;
+			// adjust height scale as before
+			float adjustHeight = (result + 1.0f) * 0.5f * 10.0f + 1.0f;
 
+			heights[i + GRID_WIDTH * j] = adjustHeight;
+		}
+	}
 
+	// create vertices with normals computed by central differences
+	for (int j = 0; j < GRID_HEIGHT; ++j)
+	{
+		for (int i = 0; i < GRID_WIDTH; ++i)
+		{
 			Vertex node;
-			node.pos = { static_cast<float>(i), adjustHeight, static_cast<float>(j), 1.0f };
-			XMVECTOR posVec = XMLoadFloat4(&node.pos);
-			XMVECTOR norVec = XMVector3Normalize(posVec);
-			XMStoreFloat4(&node.nor, norVec);
+			float h = heights[i + GRID_WIDTH * j];
+			node.pos = { static_cast<float>(i), h, static_cast<float>(j), 1.0f };
+
+			// compute derivatives gx = dh/dx, gz = dh/dz using central differences
+			float gx, gz;
+
+			if (i == 0)
+				gx = heights[(i + 1) + GRID_WIDTH * j] - heights[i + GRID_WIDTH * j];
+			else if (i == GRID_WIDTH - 1)
+				gx = heights[i + GRID_WIDTH * j] - heights[(i - 1) + GRID_WIDTH * j];
+			else
+				gx = (heights[(i + 1) + GRID_WIDTH * j] - heights[(i - 1) + GRID_WIDTH * j]) * 0.5f;
+
+			if (j == 0)
+				gz = heights[i + GRID_WIDTH * (j + 1)] - heights[i + GRID_WIDTH * j];
+			else if (j == GRID_HEIGHT - 1)
+				gz = heights[i + GRID_WIDTH * j] - heights[i + GRID_WIDTH * (j - 1)];
+			else
+				gz = (heights[i + GRID_WIDTH * (j + 1)] - heights[i + GRID_WIDTH * (j - 1)]) * 0.5f;
+
+			// normal approximation: (-gx, 1.0, -gz) then normalize. Use a scale factor on the y to control steepness
+			XMVECTOR n = XMVectorSet(-gx, 2.0f, -gz, 0.0f);
+			n = XMVector3Normalize(n);
+			XMFLOAT3 nf;
+			XMStoreFloat3(&nf, n);
+			node.nor = { nf.x, nf.y, nf.z, 0.0f };
 
 			mVertices.push_back(node);
 		}
 	}
 
-
-	const int GRID_WIDTH = x * scale;
-	const int GRID_HEIGHT = y * scale;
-
+	// indices (triangle list) same as before
 	for (int j = 0; j < GRID_HEIGHT - 1; ++j)
 	{
 		for (int i = 0; i < GRID_WIDTH - 1; ++i)
