@@ -25,9 +25,6 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
-		mConstantBuffer.View = XMMatrixIdentity();
-		mCBResize.Projection = XMMatrixIdentity();
-		mCBFrame.World = XMMatrixIdentity();
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);
