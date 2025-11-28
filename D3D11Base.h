@@ -31,8 +31,6 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
-		mVertexShaders->resize((size_t)eShaderID::Count);
-		mPixelShaders->resize((size_t)eShaderID::Count);
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);
@@ -50,12 +48,15 @@ public:
 	ID3D11Buffer* GetNeverChangeBuffer(void) const;
 	ID3D11Buffer* GetChangeOnResizeBuffer(void) const;
 	ID3D11Buffer* GetCBChangeEveryFrame(void) const;
+	IDXGISwapChain* GetSwapChain(void) const;
+	ID3D11RasterizerState* GetRasterState(void) const;
 
 private:
 	bool getMaxVideoMemoryAdapter(void);
 	bool createDeviceAndSwapChain(HWND hWnd, UINT width, UINT height);
 	bool createRenderTargets(UINT width, UINT height);
-	void createConstBuffers(UINT width, UINT height);
+	bool createConstBuffers(UINT width, UINT height);
+	bool createRasterizer(void);
 	void setFullSizeViewport(UINT width, UINT height);
 	bool addVertexShader(const LPWSTR filePath, const UINT numElements = 0, const D3D11_INPUT_ELEMENT_DESC* layoutOrNULL = nullptr);
 
@@ -66,6 +67,7 @@ private:
 
 	IDXGIAdapter1* mAdapter = nullptr;
 	D3D_FEATURE_LEVEL mFeatureLevel;
+	ID3D11RasterizerState* mRasterState = nullptr;
 
 	ID3D11RenderTargetView* mRenderTargetView = nullptr;
 	ID3D11Texture2D* mDepthStencil = nullptr;
@@ -88,6 +90,11 @@ private:
 	{
 		XMMATRIX Projection;
 	}mCBResize;
+
+	struct CBChangeEveryFrame
+	{
+		XMMATRIX World;
+	}mCBFrame;
 };
 
 #endif

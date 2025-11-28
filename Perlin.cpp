@@ -1,7 +1,8 @@
-#include"Perlin.h"
+﻿#include"Perlin.h"
 
 #include<ctime>
 #include<cstdlib>
+#include<iostream>
 
 using namespace DirectX;
 
@@ -32,12 +33,14 @@ ID3D11Buffer* Perlin::GetVertexBuffer(void)
 	return mVertexBuffer;
 }
 
+size_t Perlin::GetVertexSize(void) const 
+{
+	return sizeof(Vertex);
+}
+
 
 void Perlin::createNoise(int x, int y, int scale)
 {
-	const float standX = (rand() % 10) / 10.0f;
-	const float standY = (rand() % 10) / 10.0f;
-
 	eastl::vector<float> randDir;
 
 
@@ -54,6 +57,11 @@ void Perlin::createNoise(int x, int y, int scale)
 	{
 		for (int i = 0; i < x * scale; ++i)
 		{
+			const float px = (float)i / (float)(x * scale);
+			const float py = (float)j / (float)(y * scale);
+			float standX = px - floorf(px);
+			float standY = py - floorf(py);
+
 			int i00 = i * 2 +	  SCALED_X * j * 2;
 			int i01 = i * 2 +	  SCALED_X * (j * 2+ 1);
 			int i10 = i * 2 + 1 + SCALED_X * j * 2;
@@ -71,8 +79,11 @@ void Perlin::createNoise(int x, int y, int scale)
 			float n1 = lerp(p10, p11, v);
 			float result = lerp(n0, n1, u);
 
+			float adjustHeight = (result + 1.0f) * 0.5f * 10 + 1;
+
+
 			Vertex node;
-			node.pos = { static_cast<float>(i), static_cast<float>(j), result, 1.0f };
+			node.pos = { static_cast<float>(i), adjustHeight, static_cast<float>(j), 1.0f };
 			XMVECTOR posVec = XMLoadFloat4(&node.pos);
 			XMVECTOR norVec = XMVector3Normalize(posVec);
 			XMStoreFloat4(&node.nor, norVec);
@@ -82,22 +93,25 @@ void Perlin::createNoise(int x, int y, int scale)
 	}
 
 
-	for (int j = 0; j < y * scale; j += 2)
+	const int GRID_WIDTH = x * scale;
+	const int GRID_HEIGHT = y * scale;
+
+	for (int j = 0; j < GRID_HEIGHT - 1; ++j)
 	{
-		for (int i = 0; i < x * scale; i += 2)
+		for (int i = 0; i < GRID_WIDTH - 1; ++i)
 		{
-			int p00 = i + x * scale * j;
-			int p01 = i + 1 + x * scale * j;
-			int p10 = i + x * scale * (j + 1);
-			int p11 = i + 1 + x * scale * (j + 1);
+			int p00 = i + GRID_WIDTH * j;
+			int p01 = i + 1 + GRID_WIDTH * j;
+			int p10 = i + GRID_WIDTH * (j + 1);
+			int p11 = i + 1 + GRID_WIDTH * (j + 1);
 
-			mIndices.push_back(p00);
-			mIndices.push_back(p01);
-			mIndices.push_back(p11);
+			mIndices.push_back(static_cast<uint32_t>(p00));
+			mIndices.push_back(static_cast<uint32_t>(p11));
+			mIndices.push_back(static_cast<uint32_t>(p01));
 
-			mIndices.push_back(p00);
-			mIndices.push_back(p10);
-			mIndices.push_back(p11);
+			mIndices.push_back(static_cast<uint32_t>(p00));
+			mIndices.push_back(static_cast<uint32_t>(p10));
+			mIndices.push_back(static_cast<uint32_t>(p11));
 		}
 	}
 }
@@ -125,7 +139,7 @@ bool Perlin::createBuffers(void)
 		goto LB_FAILED_CREATE_VERTEX_BUFFER;
 	}
 
-	bufferDesc.ByteWidth = sizeof(int) * mIndices.size();
+	bufferDesc.ByteWidth = sizeof(uint32_t) * mIndices.size();
 	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	initData.pSysMem = mIndices.data();
 
