@@ -64,21 +64,6 @@ private:
 	ID3D11Buffer* mCBChangeOnResize = nullptr;
 	ID3D11Buffer* mCBChangesEveryFrame = nullptr;
 
-	struct CBChangesEveryFrame
-	{
-		XMMATRIX World;
-	} mCBFrame;
-
-	struct CBNeverChanges
-	{
-		XMMATRIX View;
-	} mConstantBuffer;
-
-	struct CBChangeOnResize
-	{
-		XMMATRIX Projection;
-	} mCBResize;
-
 };
 
 #endif
