@@ -232,9 +232,17 @@ void RenderPerlin()
     ID3D11Buffer* cbProj = base.GetCBChangeOnResizeBuffer(); // Projection
     ID3D11DeviceContext* ctx = base.GetImmediateContext();
 
-    // World 행렬 설정 (Perlin 메시 위치)
+    
     CBFrame cbFrame;
-    cbFrame.World = XMMatrixIdentity();
+
+    XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
+
+    
+    XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
+    cbFrame.World = scale * translate;
+    cbFrame.World = XMMatrixTranspose(cbFrame.World);
+    
+    
     ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbFrame, 0, 0);
 
     // 셰이더 설정

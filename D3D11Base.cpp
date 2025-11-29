@@ -359,7 +359,7 @@ bool D3D11Base::createConstBuffers(UINT width, UINT height)
 {
 	HRESULT hr;
 	
-	XMVECTOR eye = XMVectorSet(0.f, 0.f, -70.0f, 0.0f); 
+	XMVECTOR eye = XMVectorSet(0.f, 10.f, -70.0f, 0.0f); 
 	XMVECTOR at = XMVectorSet(0.f, 0.f, 0.0f, 0.0f);  
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMMATRIX view = XMMatrixLookAtLH(eye, at, up);

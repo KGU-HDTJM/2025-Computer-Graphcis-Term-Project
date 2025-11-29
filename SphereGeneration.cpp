@@ -76,7 +76,7 @@ Sphere* SphereGenerator::CreateSphere(float radius, const XMFLOAT4& pos) const
 	XMMATRIX world = XMMatrixTranslationFromVector(posVec);
 
 	Sphere* res = new Sphere(mBase, this, radius, vertexBuffer, indexBuffer, indexCount, world);
-	return res;
+	return res;	
 }
 
 ID3D11VertexShader* SphereGenerator::GetVertexShader(void) const
