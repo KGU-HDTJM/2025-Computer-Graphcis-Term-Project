@@ -33,7 +33,7 @@
     <ClInclude Include="D3D11Base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Perlin.h">
+    <ClInclude Include="Map.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SphereGenerator.h">
@@ -53,7 +53,7 @@
     <ClCompile Include="D3D11Base.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Perlin.cpp">
+    <ClCompile Include="Map.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SphereGeneration.cpp">

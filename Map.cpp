@@ -1,8 +1,9 @@
-﻿#include"Perlin.h"
+﻿#include"Map.h"
 
 #include<cstdlib>
 #include<iostream>
 
+using namespace eastl;
 using namespace DirectX;
 
 const float PI = acosf(-1);
@@ -17,36 +18,80 @@ inline float fade(float t)
 	return ((6 * t - 15) * t + 10) * t * t * t;
 }
 
-size_t Perlin::GetIndexCount(void)
+size_t Map::GetIndexCount(void)
 {
 	return mIndices.size();
 }
 
-ID3D11Buffer* Perlin::GetIndexBuffer(void)
+ID3D11Buffer* Map::GetIndexBuffer(void)
 {
 	return mIndexBuffer;
 }
 
-ID3D11Buffer* Perlin::GetVertexBuffer(void)
+ID3D11Buffer* Map::GetVertexBuffer(void)
 {
 	return mVertexBuffer;
 }
 
-size_t Perlin::GetVertexSize(void) const 
+size_t Map::GetVertexSize(void) const 
 {
 	return sizeof(Vertex);
 }
 
 
-void Perlin::createNoise(int x, int y, int scale)
+void Map::AddPerlinLayer(int x, int y, int scale)
 {
-	// Clear any existing data
-	mVertices.clear();
-	mIndices.clear();
+	vector<Vertex> newPerlin = createVertex(x, y, scale);
+	updateVertexBuffer(newPerlin);
+}
 
-	eastl::vector<float> randDir;
+void Map::Draw(void)
+{
+	ID3D11Buffer* cbWorld	 = mBase->GetCBChangeEveryFrame();   // World
+	ID3D11Buffer* cbView	 = mBase->GetCBNeverChangeBuffer();    // View
+	ID3D11Buffer* cbProj	 = mBase->GetCBChangeOnResizeBuffer(); // Projection
+	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
-	// generate random directions for grid corners (coarse grid scaled by 'scale')
+	CBFrame cbFrame;
+
+	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
+
+
+	XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
+	cbFrame.World = scale * translate;
+	cbFrame.World = XMMatrixTranspose(cbFrame.World);
+
+
+	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbFrame, 0, 0);
+
+	ctx->VSSetShader(mBase->GetVertexShader(eShaderID::Basic), nullptr, 0);
+	ctx->PSSetShader(mBase->GetPixelShader(eShaderID::Basic), nullptr, 0);
+
+	ctx->VSSetConstantBuffers(0, 1, &cbWorld); 
+	ctx->VSSetConstantBuffers(1, 1, &cbView);  
+	ctx->VSSetConstantBuffers(2, 1, &cbProj);  
+	ctx->HSSetShader(nullptr, nullptr, 0);
+	ctx->DSSetShader(nullptr, nullptr, 0);
+	ctx->PSSetConstantBuffers(0, 1, &cbWorld);
+
+	// IA 설정
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	ctx->IASetInputLayout(mBase->GetInputLayout());
+	ctx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
+	ctx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Draw
+	ctx->DrawIndexed(static_cast<UINT>(mIndices.size()), 0, 0);
+}
+
+
+vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
+{
+	vector<float> randDir;
+	vector<Vertex> vertices;
+
 	const int COARSE_W = x * 2 * scale;
 	const int COARSE_H = y * 2 * scale;
 	randDir.reserve(COARSE_W * COARSE_H);
@@ -134,11 +179,19 @@ void Perlin::createNoise(int x, int y, int scale)
 			XMStoreFloat3(&nf, n);
 			node.Normal = { nf.x, nf.y, nf.z, 0.0f };
 
-			mVertices.push_back(node);
+			vertices.push_back(node);
 		}
 	}
 
-	// indices (triangle list) same as before
+	return vertices;
+}
+
+void Map::createIndex(const int& x, const int& y, const int& scale)
+{
+
+	const int GRID_WIDTH = x * scale;
+	const int GRID_HEIGHT = y * scale;
+
 	for (int j = 0; j < GRID_HEIGHT - 1; ++j)
 	{
 		for (int i = 0; i < GRID_WIDTH - 1; ++i)
@@ -159,9 +212,12 @@ void Perlin::createNoise(int x, int y, int scale)
 	}
 }
 
-bool Perlin::createBuffers(void)
+bool Map::createBuffers(void)
 {
 	HRESULT hr;
+
+	ID3D11Device* dev = mBase->GetDevice();
+	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
 	D3D11_BUFFER_DESC bufferDesc;
 	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
@@ -176,7 +232,7 @@ bool Perlin::createBuffers(void)
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	initData.pSysMem = mVertices.data();
 
-	hr = mDevice->CreateBuffer(&bufferDesc, &initData, &mVertexBuffer);
+	hr = dev->CreateBuffer(&bufferDesc, &initData, &mVertexBuffer);
 	if (FAILED(hr))
 	{
 		goto LB_FAILED_CREATE_VERTEX_BUFFER;
@@ -186,7 +242,7 @@ bool Perlin::createBuffers(void)
 	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	initData.pSysMem = mIndices.data();
 
-	hr = mDevice->CreateBuffer(&bufferDesc, &initData, &mIndexBuffer);
+	hr = dev->CreateBuffer(&bufferDesc, &initData, &mIndexBuffer);
 	if (FAILED(hr))
 	{
 		goto LB_FAILED_CREATE_INDEX_BUFFER;
@@ -199,4 +255,31 @@ LB_FAILED_CREATE_INDEX_BUFFER:
 LB_FAILED_CREATE_VERTEX_BUFFER:
 
 	return false;
+}
+
+void Map::updateVertexBuffer(const vector<Vertex>& newPerlin)
+{
+	const size_t BASE_LENGTH = mVertices.size();
+	const size_t HALF_BASE_LENGTH = BASE_LENGTH / 2;
+	const size_t LAYER_LENGTH = newPerlin.size();
+
+
+	size_t standIdx = rand() % HALF_BASE_LENGTH;
+
+	for (size_t i = 0; i < LAYER_LENGTH && standIdx + i < BASE_LENGTH; ++i)
+	{
+		XMFLOAT4 result;
+		XMVECTOR layerPos = XMLoadFloat4(&newPerlin[i].Position);
+		XMVECTOR originPos = XMLoadFloat4(&mVertices[standIdx + i].Position);
+		
+		layerPos = XMVectorAdd(originPos, layerPos);
+		XMStoreFloat4(&result, layerPos);
+		result.w = 1.0f;
+
+		mVertices[standIdx + i].Position = result;
+	}
+
+	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
+
+	ctx->UpdateSubresource(mVertexBuffer, 0, nullptr, mVertices.data(), 0, 0);
 }

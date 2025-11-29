@@ -8,7 +8,7 @@
 #include <DirectXMath.h>
 
 #include"D3D11Base.h"
-#include"Perlin.h"
+#include"Map.h"
 #include "Sphere.h"
 #include "SphereGenerator.h"
 
@@ -21,7 +21,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND g_hWnd;
 
 D3D11Base base;
-Perlin* perlin; 
+Map* pMap; 
 SphereGenerator* pSPGen;
 Sphere* pSphere;
 
@@ -210,7 +210,8 @@ bool Init(void)
     if (!base.Initialize(g_hWnd)) {
         return false;
     }
-    perlin = new Perlin(base.GetDevice(), base.GetImmediateContext(), 10, 10, 4);
+    pMap = new Map(&base, 10, 10, 4);
+    pMap->AddPerlinLayer(3, 3, 1);
 
     pSPGen = new SphereGenerator(&base);
 
@@ -221,52 +222,6 @@ bool Init(void)
 
 void Update(void)
 {
-}
-
-
-void RenderPerlin()
-{
-    
-    ID3D11Buffer* cbWorld = base.GetCBChangeEveryFrame();   // World
-    ID3D11Buffer* cbView = base.GetCBNeverChangeBuffer();    // View
-    ID3D11Buffer* cbProj = base.GetCBChangeOnResizeBuffer(); // Projection
-    ID3D11DeviceContext* ctx = base.GetImmediateContext();
-
-    
-    CBFrame cbFrame;
-
-    XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
-
-    
-    XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
-    cbFrame.World = scale * translate;
-    cbFrame.World = XMMatrixTranspose(cbFrame.World);
-    
-    
-    ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbFrame, 0, 0);
-
-    // 셰이더 설정
-    ctx->VSSetShader(base.GetVertexShader(eShaderID::Basic), nullptr, 0);
-    ctx->PSSetShader(base.GetPixelShader(eShaderID::Basic), nullptr, 0);
-
-    ctx->VSSetConstantBuffers(0, 1, &cbWorld); // b0 = World
-    ctx->VSSetConstantBuffers(1, 1, &cbView);  // b1 = View
-    ctx->VSSetConstantBuffers(2, 1, &cbProj);  // b2 = Projection
-    ctx->HSSetShader(nullptr, nullptr, 0);
-    ctx->DSSetShader(nullptr, nullptr, 0);
-    ctx->PSSetConstantBuffers(0, 1, &cbWorld); // Pixel Shader도 World 필요 시
-
-    // IA 설정
-    UINT stride = perlin->GetVertexSize();
-    UINT offset = 0;
-    ID3D11Buffer* vertex = perlin->GetVertexBuffer();
-    ctx->IASetInputLayout(base.GetInputLayout());
-    ctx->IASetVertexBuffers(0, 1, &vertex, &stride, &offset);
-    ctx->IASetIndexBuffer(perlin->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    // Draw
-    ctx->DrawIndexed(static_cast<UINT>(perlin->GetIndexCount()), 0, 0);
 }
 
 
@@ -285,16 +240,16 @@ void Render(void)
     immediateContext->IASetInputLayout(base.GetInputLayout());
 
 
-
+    
     pSphere->Draw();
-    RenderPerlin();
+    pMap->Draw();
     
     swapChain->Present(1, 0);
 }
 
 void Shutdown(void)
 {
-    delete perlin;
+    delete pMap;
     delete pSphere;
     delete pSPGen;
 }
