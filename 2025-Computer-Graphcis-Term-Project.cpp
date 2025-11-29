@@ -9,6 +9,8 @@
 
 #include"D3D11Base.h"
 #include"Perlin.h"
+#include "Sphere.h"
+#include "SphereGenerator.h"
 
 #define MAX_LOADSTRING 100
 
@@ -19,7 +21,9 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND g_hWnd;
 
 D3D11Base base;
-Perlin* perlin;
+Perlin* perlin; 
+SphereGenerator* pSPGen;
+Sphere* pSphere;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -27,6 +31,11 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 void RenderFrame(ID3D11Buffer*, ID3D11Buffer*, const ID3D11SamplerState*, const eShaderID, const eShaderID);
+bool Init(void);
+void Update(void);
+void Render(void);
+void Shutdown(void);
+
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -53,9 +62,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     MSG msg = { 0 };
 
-    base.Initialize(g_hWnd);
-    perlin = new Perlin(base.GetDevice(), base.GetImmediateContext(), 10, 10, 4);
-
+    if (!Init()) {
+        return FALSE;
+    }
     // Main message loop:
     while (WM_QUIT != msg.message)
     {
@@ -64,12 +73,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        else
-        {
-            RenderFrame(perlin->GetVertexBuffer(), perlin->GetIndexBuffer(), nullptr, eShaderID::Basic, eShaderID::Basic);
-        }
+        Update();
+        Render();
+        
     }
-
+    Shutdown();
     return (int) msg.wParam;
 }
 
@@ -197,12 +205,67 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 
+bool Init(void)
+{
+    if (!base.Initialize(g_hWnd)) {
+        return false;
+    }
+    perlin = new Perlin(base.GetDevice(), base.GetImmediateContext(), 10, 10, 4);
 
-void RenderFrame(ID3D11Buffer* _vertexBuffer, ID3D11Buffer* _indexBuffer, 
-    const ID3D11SamplerState* sampler, const eShaderID vsID, const eShaderID psID) 
+    pSPGen = new SphereGenerator(&base);
+
+    pSphere = pSPGen->CreateSphere(1.5, XMFLOAT4(0.F, 0.F, 0.F, 1.F));
+    
+    return true;
+}
+
+void Update(void)
+{
+}
+
+
+void RenderPerlin()
+{
+    
+    ID3D11Buffer* cbWorld = base.GetCBChangeEveryFrame();   // World
+    ID3D11Buffer* cbView = base.GetCBNeverChangeBuffer();    // View
+    ID3D11Buffer* cbProj = base.GetCBChangeOnResizeBuffer(); // Projection
+    ID3D11DeviceContext* ctx = base.GetImmediateContext();
+
+    // World 행렬 설정 (Perlin 메시 위치)
+    CBFrame cbFrame;
+    cbFrame.World = XMMatrixIdentity();
+    ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbFrame, 0, 0);
+
+    // 셰이더 설정
+    ctx->VSSetShader(base.GetVertexShader(eShaderID::Basic), nullptr, 0);
+    ctx->PSSetShader(base.GetPixelShader(eShaderID::Basic), nullptr, 0);
+
+    ctx->VSSetConstantBuffers(0, 1, &cbWorld); // b0 = World
+    ctx->VSSetConstantBuffers(1, 1, &cbView);  // b1 = View
+    ctx->VSSetConstantBuffers(2, 1, &cbProj);  // b2 = Projection
+    ctx->HSSetShader(nullptr, nullptr, 0);
+    ctx->DSSetShader(nullptr, nullptr, 0);
+    ctx->PSSetConstantBuffers(0, 1, &cbWorld); // Pixel Shader도 World 필요 시
+
+    // IA 설정
+    UINT stride = perlin->GetVertexSize();
+    UINT offset = 0;
+    ID3D11Buffer* vertex = perlin->GetVertexBuffer();
+    ctx->IASetInputLayout(base.GetInputLayout());
+    ctx->IASetVertexBuffers(0, 1, &vertex, &stride, &offset);
+    ctx->IASetIndexBuffer(perlin->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    // Draw
+    ctx->DrawIndexed(static_cast<UINT>(perlin->GetIndexCount()), 0, 0);
+}
+
+
+void Render(void) 
 {
     const float BG_COLOR[] = { 0.0f, 0.125f, 0.3f, 1.0f };
-    
+
     ID3D11Device* device = base.GetDevice();
     ID3D11DeviceContext* immediateContext = base.GetImmediateContext();
     IDXGISwapChain* swapChain = base.GetSwapChain();
@@ -210,38 +273,20 @@ void RenderFrame(ID3D11Buffer* _vertexBuffer, ID3D11Buffer* _indexBuffer,
 
     immediateContext->ClearRenderTargetView(base.GetRenderTargetView(), BG_COLOR);
     immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+    immediateContext->IASetInputLayout(base.GetInputLayout());
+
+
+
+    pSphere->Draw();
+    RenderPerlin();
     
-    ID3D11Buffer* changeEveryFrame = base.GetCBChangeEveryFrame();
-
-    struct CBChangeEveryFrame
-    {
-        XMMATRIX World;
-    }CBFrame;
-
-    CBFrame.World = XMMatrixTranspose(XMMatrixIdentity());
-
-    immediateContext->UpdateSubresource(changeEveryFrame, 0, nullptr, &CBFrame, 0, 0);
-
-    ID3D11Buffer* neverChange = base.GetNeverChangeBuffer();
-    ID3D11Buffer* changeOnResize = base.GetChangeOnResizeBuffer();
-    
-
-    immediateContext->VSSetShader(base.GetVertexShader(vsID), nullptr, 0);
-    immediateContext->VSSetConstantBuffers(0, 1, &neverChange);
-    immediateContext->VSSetConstantBuffers(1, 1, &changeOnResize);
-    immediateContext->VSSetConstantBuffers(2, 1, &changeEveryFrame);
-    immediateContext->PSSetShader(base.GetPixelShader(psID), nullptr, 0);
-    immediateContext->PSSetConstantBuffers(0, 1, &changeEveryFrame);
-    immediateContext->RSSetState(base.GetRasterState());
-
-    UINT stride = perlin->GetVertexSize();
-    UINT offset = 0;
-
-    immediateContext->IASetVertexBuffers(0, 1, &_vertexBuffer, &stride, &offset);
-    immediateContext->IASetIndexBuffer(_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-    immediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    immediateContext->DrawIndexed(static_cast<UINT>(perlin->GetIndexCount()), 0, 0);
-
     swapChain->Present(1, 0);
+}
+
+void Shutdown(void)
+{
+    delete perlin;
+    delete pSphere;
+    delete pSPGen;
 }

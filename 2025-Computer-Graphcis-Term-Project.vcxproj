@@ -292,6 +292,7 @@
   <ItemGroup>
     <ClInclude Include="2025-Computer-Graphcis-Term-Project.h" />
     <ClInclude Include="D3D11Base.h" />
+    <ClInclude Include="define.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Perlin.h" />
     <ClInclude Include="Resource.h" />

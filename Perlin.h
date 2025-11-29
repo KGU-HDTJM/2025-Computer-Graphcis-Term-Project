@@ -5,6 +5,8 @@
 #include<EASTL/vector.h>
 #include<ctime>
 
+#include "define.h"
+
 class Perlin
 {
 public:
@@ -45,11 +47,6 @@ private:
 
 	ID3D11Buffer* mIndexBuffer  = nullptr;
 	ID3D11Buffer* mVertexBuffer = nullptr;
-	
-	struct Vertex {
-		DirectX::XMFLOAT4 pos;
-		DirectX::XMFLOAT4 nor;
-	};
 
 	eastl::vector<uint32_t> mIndices;
 	eastl::vector<Vertex> mVertices;

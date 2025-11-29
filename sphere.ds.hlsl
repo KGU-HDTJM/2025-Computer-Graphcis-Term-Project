@@ -1,28 +1,33 @@
 #include "sphere.common.hlsli"
 
-[domain("quad")]
-DS_OUTPUT main(HS_CONSTANT_DATA_OUTPUT input, const OutputPatch<HS_CONTROL_POINT_OUTPUT, 4> patch, float2 uv : SV_DomainLocation)
+struct DS_CONTROL_POINT_INPUT
+{
+    float3 Position : POSITION;
+    float3 Normal : NORMAL;
+    float2 TexCoord : TEXCOORD0;
+};
+
+[domain("tri")]
+DS_OUTPUT main(HS_CONSTANT_DATA_OUTPUT input, const OutputPatch<DS_CONTROL_POINT_INPUT, 3> patch, float3 bary : SV_DomainLocation)
 {
     DS_OUTPUT output;
 
-    // Bilinear interpolation
-    float4 pos = lerp(lerp(patch[0].Position, patch[1].Position, uv.x),
-                      lerp(patch[2].Position, patch[3].Position, uv.x), uv.y);
+    // 위치 보간
+    float3 pos = patch[0].Position * bary.x + patch[1].Position * bary.y + patch[2].Position * bary.z;
+    float3 normal = patch[0].Normal * bary.x + patch[1].Normal * bary.y + patch[2].Normal * bary.z;
+    float2 tex = patch[0].TexCoord * bary.x + patch[1].TexCoord * bary.y + patch[2].TexCoord * bary.z;
 
-    float4 normal = lerp(lerp(patch[0].Normal, patch[1].Normal, uv.x),
-                         lerp(patch[2].Normal, patch[3].Normal, uv.x), uv.y);
+    // Sphere 형태로 정규화
+    pos = normalize(pos);
+    normal = normalize(normal);
 
-    float2 tex = lerp(lerp(patch[0].TexCoord, patch[1].TexCoord, uv.x),
-                      lerp(patch[2].TexCoord, patch[3].TexCoord, uv.x), uv.y);
-
-    // Sphere projection
-    pos.xyz = normalize(pos.xyz);
-
-    // Transform
-    float4 worldPos = mul(pos, World);
+    // 월드 변환
+    float4 worldPos = mul(float4(pos, 1.0f), World);
     float4 viewPos = mul(worldPos, View);
-    output.Position = mul(viewPos, Projection);
-    output.Normal = normalize(normal.xyz);
+    float4 projPos = mul(viewPos, Projection);
+
+    output.Position = projPos;
+    output.Normal = normalize(mul(float4(normal, 0.0f), World)); // Normal 변환
     output.TexCoord = tex;
 
     return output;

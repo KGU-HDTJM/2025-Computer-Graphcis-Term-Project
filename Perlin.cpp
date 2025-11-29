@@ -108,7 +108,7 @@ void Perlin::createNoise(int x, int y, int scale)
 		{
 			Vertex node;
 			float h = heights[i + GRID_WIDTH * j];
-			node.pos = { static_cast<float>(i), h, static_cast<float>(j), 1.0f };
+			node.Position = { static_cast<float>(i), h, static_cast<float>(j), 1.0f };
 
 			// compute derivatives gx = dh/dx, gz = dh/dz using central differences
 			float gx, gz;
@@ -132,7 +132,7 @@ void Perlin::createNoise(int x, int y, int scale)
 			n = XMVector3Normalize(n);
 			XMFLOAT3 nf;
 			XMStoreFloat3(&nf, n);
-			node.nor = { nf.x, nf.y, nf.z, 0.0f };
+			node.Normal = { nf.x, nf.y, nf.z, 0.0f };
 
 			mVertices.push_back(node);
 		}
@@ -172,7 +172,7 @@ bool Perlin::createBuffers(void)
 	D3D11_SUBRESOURCE_DATA initData;
 	ZeroMemory(&initData, sizeof(initData));
 
-	bufferDesc.ByteWidth = sizeof(Vertex) * mVertices.size();
+	bufferDesc.ByteWidth = (UINT)(sizeof(Vertex) * mVertices.size());
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	initData.pSysMem = mVertices.data();
 
@@ -182,7 +182,7 @@ bool Perlin::createBuffers(void)
 		goto LB_FAILED_CREATE_VERTEX_BUFFER;
 	}
 
-	bufferDesc.ByteWidth = sizeof(uint32_t) * mIndices.size();
+	bufferDesc.ByteWidth = (UINT)(sizeof(uint32_t) * mIndices.size());
 	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	initData.pSysMem = mIndices.data();
 

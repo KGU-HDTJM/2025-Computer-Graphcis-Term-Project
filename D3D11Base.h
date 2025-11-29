@@ -7,6 +7,8 @@
 #include <DirectXMath.h>
 #include <EASTL/vector.h>
 
+#include "define.h"
+
 #pragma comment(lib, "dxgi.lib")  
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3dcompiler.lib")
@@ -31,7 +33,6 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
-		mCBFrame.World = XMMatrixIdentity();
 		mCBResize.Projection = XMMatrixIdentity();
 		mConstantBuffer.View = XMMatrixIdentity();
 	}
@@ -48,8 +49,8 @@ public:
 	ID3D11DepthStencilView* GetDepthStencilView(void) const;
 	ID3D11VertexShader* GetVertexShader(const eShaderID id) const;
 	ID3D11PixelShader* GetPixelShader(const eShaderID id) const;
-	ID3D11Buffer* GetNeverChangeBuffer(void) const;
-	ID3D11Buffer* GetChangeOnResizeBuffer(void) const;
+	ID3D11Buffer* GetCBNeverChangeBuffer(void) const;
+	ID3D11Buffer* GetCBChangeOnResizeBuffer(void) const;
 	ID3D11Buffer* GetCBChangeEveryFrame(void) const;
 	IDXGISwapChain* GetSwapChain(void) const;
 	ID3D11RasterizerState* GetRasterState(void) const;
@@ -86,20 +87,9 @@ private:
 	ID3D11Buffer* mCBChangeOnResize = nullptr;
 	ID3D11Buffer* mCBChangesEveryFrame = nullptr;
 
-	struct CBNeverChanges
-	{
-		XMMATRIX View;
-	} mConstantBuffer;
-
-	struct CBChangeOnResize
-	{
-		XMMATRIX Projection;
-	}mCBResize;
-
-	struct CBChangeEveryFrame
-	{
-		XMMATRIX World;
-	}mCBFrame;
+	ConstantBuffer mConstantBuffer;
+	CBResize mCBResize;
+	
 };
 
 #endif

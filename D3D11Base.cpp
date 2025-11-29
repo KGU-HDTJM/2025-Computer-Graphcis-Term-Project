@@ -47,10 +47,11 @@ bool D3D11Base::Initialize(HWND hWnd)
 		goto LB_FAILED_CREATE_CONST_BUFFERS;
 	}
 
-	if (!createRasterizer())
+	/*if (!createRasterizer())
 	{
 		goto LB_FAILED_CREATE_RASTER_STATE;
-	}
+	}*/
+
 
 
 	{
@@ -101,11 +102,11 @@ ID3D11DepthStencilView* D3D11Base::GetDepthStencilView(void) const {
 	return mDepthStencilView;
 }
 
-ID3D11Buffer* D3D11Base::GetChangeOnResizeBuffer(void) const {
+ID3D11Buffer* D3D11Base::GetCBChangeOnResizeBuffer(void) const {
 	return mCBChangeOnResize;
 }
 
-ID3D11Buffer* D3D11Base::GetNeverChangeBuffer(void) const {
+ID3D11Buffer* D3D11Base::GetCBNeverChangeBuffer(void) const {
 	return mCBNeverChanges;
 }
 
@@ -231,8 +232,7 @@ void D3D11Base::OnResize(UINT width, UINT height)
 
 	HRESULT hr;
 
-	XMMATRIX projection = XMMatrixPerspectiveLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
-
+	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
 	hr = mSwapChain->ResizeBuffers(1, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 	if (FAILED(hr))
 	{
@@ -359,15 +359,17 @@ bool D3D11Base::createConstBuffers(UINT width, UINT height)
 {
 	HRESULT hr;
 	
-	XMVECTOR eye = XMVectorSet(20.0f, 23.0f, -10.0f, 0.0f); 
-	XMVECTOR at = XMVectorSet(20.0f, 23.0f, 0.0f, 0.0f);  
+	XMVECTOR eye = XMVectorSet(0.f, 0.f, -70.0f, 0.0f); 
+	XMVECTOR at = XMVectorSet(0.f, 0.f, 0.0f, 0.0f);  
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMMATRIX view = XMMatrixLookAtLH(eye, at, up);
 
 	mConstantBuffer.View = XMMatrixTranspose(view);
 
-	XMMATRIX projection = XMMatrixPerspectiveLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
+
+	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
 	mCBResize.Projection = XMMatrixTranspose(projection);
+
 
 	D3D11_BUFFER_DESC bufferDesc;
 	ZeroMemory(&bufferDesc, sizeof(bufferDesc));
@@ -397,7 +399,7 @@ bool D3D11Base::createConstBuffers(UINT width, UINT height)
 		goto LB_FAILED_CREATE_CHANGE_ON_RESIZE_BUFFER;
 	}
 
-	bufferDesc.ByteWidth = sizeof(mCBFrame);
+	bufferDesc.ByteWidth = sizeof(CBFrame);
 
 	hr = mDevice->CreateBuffer(&bufferDesc, nullptr, &mCBChangesEveryFrame);
 	if (FAILED(hr))
@@ -416,7 +418,6 @@ LB_FAILED_CREATE_CHANGE_ON_RESIZE_BUFFER:
 LB_FAILED_CREAET_NEVER_CHANGE_BUFFER:
 	return false;
 }
-
 
 bool D3D11Base::createRenderTargets(UINT width, UINT height)
 {
@@ -491,7 +492,6 @@ bool D3D11Base::createRasterizer(void)
 	rasterDesc.ScissorEnable = FALSE;
 	rasterDesc.MultisampleEnable = FALSE;
 	rasterDesc.AntialiasedLineEnable = FALSE;
-
 	hr = mDevice->CreateRasterizerState(&rasterDesc, &mRasterState);
 	if (FAILED(hr))
 	{
