@@ -2,6 +2,7 @@
 
 #include<cstdlib>
 #include<iostream>
+#include<fstream>
 
 using namespace eastl;
 using namespace DirectX;
@@ -146,7 +147,6 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 		}
 	}
 
-	// create vertices with normals computed by central differences
 	for (int j = 0; j < GRID_HEIGHT; ++j)
 	{
 		for (int i = 0; i < GRID_WIDTH; ++i)
@@ -183,6 +183,16 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 		}
 	}
 
+	// - store vector to binary -
+	std::ofstream fout(VERTEX_FILE, std::ios::binary);
+	if (!fout.is_open())
+	{
+		MessageBoxA(nullptr, "VERTEX_FILE not fount", "Error", MB_OK);
+		assert(false);
+	}
+	fout.write(reinterpret_cast<char*>(vertices.data()), vertices.size() * sizeof(Vertex));
+	fout.close();
+
 	return vertices;
 }
 
@@ -216,6 +226,22 @@ bool Map::createBuffers(void)
 {
 	HRESULT hr;
 
+	std::ifstream fin(VERTEX_FILE, std::ios::binary);
+	if (!fin.is_open())
+	{
+		MessageBoxA(nullptr, "VERTEX_FILE not fount", "Error", MB_OK);
+		assert(false);
+	}
+	fin.seekg(0, std::ios::end);
+	std::streamsize size = fin.tellg();
+	fin.seekg(0, std::ios::beg);
+	size_t vecSize = size / sizeof(Vertex);
+	
+	vector<Vertex> vertices(vecSize);
+
+	fin.read(reinterpret_cast<char*>(vertices.data()), vecSize * sizeof(Vertex));
+	fin.close();
+
 	ID3D11Device* dev = mBase->GetDevice();
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
@@ -228,9 +254,9 @@ bool Map::createBuffers(void)
 	D3D11_SUBRESOURCE_DATA initData;
 	ZeroMemory(&initData, sizeof(initData));
 
-	bufferDesc.ByteWidth = (UINT)(sizeof(Vertex) * mVertices.size());
+	bufferDesc.ByteWidth = (UINT)(sizeof(Vertex) * vertices.size());
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	initData.pSysMem = mVertices.data();
+	initData.pSysMem = vertices.data();
 
 	hr = dev->CreateBuffer(&bufferDesc, &initData, &mVertexBuffer);
 	if (FAILED(hr))

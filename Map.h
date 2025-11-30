@@ -17,7 +17,7 @@ public:
 	{
 		srand(static_cast<uint32_t>(std::time(nullptr)));
 
-		mVertices = createVertex(_x, _y, _scale);
+		createVertex(_x, _y, _scale);
 		createIndex(_x, _y, _scale);
 
 		if (!createBuffers())
@@ -46,10 +46,14 @@ private:
 	
 	eastl::vector<Vertex> createVertex(const int& x, const int& y, const int& scale);
 	void createIndex(const int& x, const int& y, const int& scale);
+
 	bool createBuffers(void);
 	void updateVertexBuffer(const eastl::vector<Vertex>& newPerlin);
 
 private:
+
+	const char* VERTEX_FILE = "perlin.vx.bin";
+	const char* INDEX_FILE  = "perlin.ix.bin";
 	
 	D3D11Base* mBase = nullptr;
 

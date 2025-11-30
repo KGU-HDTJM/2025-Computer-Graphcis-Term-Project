@@ -211,7 +211,6 @@ bool Init(void)
         return false;
     }
     pMap = new Map(&base, 10, 10, 4);
-    pMap->AddPerlinLayer(3, 3, 1);
 
     pSPGen = new SphereGenerator(&base);
 
@@ -222,6 +221,7 @@ bool Init(void)
 
 void Update(void)
 {
+
 }
 
 
