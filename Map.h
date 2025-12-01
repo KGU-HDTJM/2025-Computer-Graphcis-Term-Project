@@ -6,17 +6,20 @@
 #include<ctime>
 
 #include "define.h"
+#include "D3D11Base.h"
 
-class Perlin
+class Map
 {
 public:
 
-	Perlin(void) : mDevice(nullptr), mImmediateContext(nullptr), mIndexBuffer(nullptr), mVertexBuffer(nullptr){}
-	Perlin(ID3D11Device* _Device, ID3D11DeviceContext* _ImmediateContext, const int _x, const int _y, const int _scale) : mDevice(_Device), mImmediateContext(_ImmediateContext)
+	Map(void) : mBase(nullptr), mIndexBuffer(nullptr), mVertexBuffer(nullptr){}
+	Map(D3D11Base* _base, const int _x, const int _y, const int _scale) : mBase(_base)
 	{
 		srand(static_cast<uint32_t>(std::time(nullptr)));
 
-		createNoise(_x, _y, _scale);
+		createVertex(_x, _y, _scale);
+		createIndex(_x, _y, _scale);
+
 		if (!createBuffers())
 		{
 			MessageBoxA(nullptr, "Failed to create index and vertex buffer", "Error", MB_OK);
@@ -24,7 +27,11 @@ public:
 		}
 	}
 
-	~Perlin()
+	void AddPerlinLayer(int x, int y, int scale);
+	void Draw(void);
+
+
+	~Map()
 	{
 		if (mVertexBuffer) { mVertexBuffer->Release(); }
 		if (mIndexBuffer) { mIndexBuffer->Release();   }
@@ -36,19 +43,23 @@ public:
 	size_t GetVertexSize(void) const;
 
 private:
+	
+	eastl::vector<Vertex> createVertex(const int& x, const int& y, const int& scale);
+	void createIndex(const int& x, const int& y, const int& scale);
 
-	void createNoise(int x, int y, int scale);
 	bool createBuffers(void);
+	void updateVertexBuffer(const eastl::vector<Vertex>& newPerlin);
 
 private:
+
+	const char* VERTEX_FILE = "perlin.vx.bin";
+	const char* INDEX_FILE  = "perlin.ix.bin";
 	
-	ID3D11Device* mDevice = nullptr;
-	ID3D11DeviceContext* mImmediateContext = nullptr;
+	D3D11Base* mBase = nullptr;
 
 	ID3D11Buffer* mIndexBuffer  = nullptr;
 	ID3D11Buffer* mVertexBuffer = nullptr;
 
 	eastl::vector<uint32_t> mIndices;
 	eastl::vector<Vertex> mVertices;
-	
 };

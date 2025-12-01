@@ -139,7 +139,7 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='didvkahs-Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\Tools\Propertices\EASTL.props" />
-    <Import Project="..\..\Tools\Propertices\DirectXTex.props" />
+    <Import Project="texture.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='areian0511-Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -295,7 +295,7 @@
     <ClInclude Include="D3D11Base.h" />
     <ClInclude Include="define.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="Perlin.h" />
+    <ClInclude Include="Map.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="SphereGenerator.h" />
@@ -305,7 +305,7 @@
     <ClCompile Include="2025-Computer-Graphcis-Term-Project.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="D3D11Base.cpp" />
-    <ClCompile Include="Perlin.cpp" />
+    <ClCompile Include="Map.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="SphereGeneration.cpp" />
   </ItemGroup>

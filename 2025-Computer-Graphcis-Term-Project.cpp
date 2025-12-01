@@ -10,7 +10,7 @@
 #include <DirectXMath.h>
 
 #include"D3D11Base.h"
-#include"Perlin.h"
+#include"Map.h"
 #include "Sphere.h"
 #include "SphereGenerator.h"
 #include "Camera.h"
@@ -25,7 +25,7 @@ HWND g_hWnd;
 
 // TODO: Pope Coding standard
 D3D11Base base;
-Perlin* perlin;
+Map* pMap; 
 SphereGenerator* pSPGen;
 Sphere* pSphere;
 Camera* MainCamera;
@@ -333,11 +333,10 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 bool Init(void)
 {
-	bFixMousePos = false;
-	if (!base.Initialize(g_hWnd)) {
-		return false;
-	}
-	perlin = new Perlin(base.GetDevice(), base.GetImmediateContext(), 10, 10, 4);
+    if (!base.Initialize(g_hWnd)) {
+        return false;
+    }
+    pMap = new Map(&base, 10, 10, 4);
 
 	pSPGen = new SphereGenerator(&base);
 
@@ -365,69 +364,7 @@ bool Init(void)
 
 void Update(void)
 {
-	XMFLOAT4 moveVec;
-	moveVec.x = MovingFactor.Right - MovingFactor.Left; 
-	moveVec.y = MovingFactor.Up - MovingFactor.Down;
-	moveVec.z = MovingFactor.Forward - MovingFactor.Backward;
-	moveVec.w = 0;
-	XMStoreFloat4(&moveVec, XMVector3Normalize(XMLoadFloat4(&moveVec)));
-	
-	int xDelta = 0;
-	int yDelta = 0;
 
-	Position screenCenter = { (WinInfo.Pos.X + WinInfo.Width / 2), (WinInfo.Pos.Y + WinInfo.Height / 2) };
-	if (bFixMousePos) 
-	{
-		SetCursorPos(screenCenter.X, screenCenter.Y);
-		
-		xDelta = MousePos.X - screenCenter.X;
-		yDelta = MousePos.Y - screenCenter.Y;
-	}
-	MainCamera->Update(moveVec, xDelta, -yDelta);
-}
-
-
-void RenderPerlin()
-{
-
-	ID3D11Buffer* cbWorld = base.GetCBObjectBuffer();   // World
-	ID3D11Buffer* cbView = base.GetCBFrameBuffer();    // View
-	ID3D11Buffer* cbProj = base.GetCBResizeBuffer(); // Projection
-	ID3D11DeviceContext* ctx = base.GetImmediateContext();
-
-
-	CBObject cbObject;
-
-	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
-
-
-	XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
-	cbObject.World = scale * translate;
-	cbObject.World = XMMatrixTranspose(cbObject.World);
-
-
-	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbObject, 0, 0);
-
-	// 셰이더 설정
-	ctx->VSSetShader(base.GetVertexShader(eShaderID::Basic), nullptr, 0);
-	ctx->PSSetShader(base.GetPixelShader(eShaderID::Basic), nullptr, 0);
-
-	ctx->VSSetConstantBuffers(0, 1, &cbWorld); // b0 = World
-	ctx->VSSetConstantBuffers(1, 1, &cbView);  // b1 = View
-	ctx->VSSetConstantBuffers(2, 1, &cbProj);  // b2 = Projection
-	ctx->PSSetConstantBuffers(0, 1, &cbWorld); // Pixel Shader도 World 필요 시
-
-	// IA 설정
-	UINT stride = perlin->GetVertexSize();
-	UINT offset = 0;
-	ID3D11Buffer* vertex = perlin->GetVertexBuffer();
-	ctx->IASetInputLayout(base.GetInputLayout());
-	ctx->IASetVertexBuffers(0, 1, &vertex, &stride, &offset);
-	ctx->IASetIndexBuffer(perlin->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	// Draw
-	ctx->DrawIndexed(static_cast<UINT>(perlin->GetIndexCount()), 0, 0);
 }
 
 void Render(void)
@@ -447,20 +384,19 @@ void Render(void)
 	immediateContext->ClearRenderTargetView(base.GetRenderTargetView(), BG_COLOR);
 	immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-	immediateContext->IASetInputLayout(base.GetInputLayout());
-	cbFrame.View = MainCamera->GetViewMatrix();
-	cbFrame.View = XMMatrixTranspose(MainCamera->GetViewMatrix());
-	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
+    immediateContext->IASetInputLayout(base.GetInputLayout());
 
-	pSphere->Draw();
-	RenderPerlin();
 
-	swapChain->Present(1, 0);
+    
+    pSphere->Draw();
+    pMap->Draw();
+    
+    swapChain->Present(1, 0);
 }
 
 void Shutdown(void)
 {
-	delete perlin;
-	delete pSphere;
-	delete pSPGen;
+    delete pMap;
+    delete pSphere;
+    delete pSPGen;
 }
