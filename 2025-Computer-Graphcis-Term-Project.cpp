@@ -1,5 +1,6 @@
 // 2025-Computer-Graphcis-Term-Project.cpp : Defines the entry point for the application.
 //
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "framework.h"
 #include "2025-Computer-Graphcis-Term-Project.h"
@@ -14,6 +15,7 @@
 #include "Sphere.h"
 #include "SphereGenerator.h"
 #include "Camera.h"
+#include <cstdlib>
 
 #define MAX_LOADSTRING 100
 
@@ -48,9 +50,17 @@ struct Position {
 
 struct RectInfo {
 	Position Pos;
+	POINT Center;
 	UINT Width;
 	UINT Height;
 } WinInfo;
+
+// timer
+LARGE_INTEGER Frequency;
+LARGE_INTEGER PrevTime;
+
+LONG YRotate;
+LONG XRotate;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -62,6 +72,7 @@ bool Init(void);
 void Update(void);
 void Render(void);
 void Shutdown(void);
+float GetDeltaTime(void);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -102,7 +113,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		Update();
 		Render();
-
 	}
 	Shutdown();
 	return (int)msg.wParam;
@@ -220,6 +230,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			bFixMousePos = !bFixMousePos;
 			ShowCursor(bFixMousePos);
+		}
+		break;
+		case 'R':
+		case 'r':
+		{
 		}
 		break;
 		default:
@@ -352,6 +367,10 @@ bool Init(void)
 	WinInfo.Height = rect.bottom - rect.top;
 	WinInfo.Pos.X = rect.left;
 	WinInfo.Pos.Y = rect.top;
+	WinInfo.Center.x = WinInfo.Width / 2 + WinInfo.Pos.X;
+	WinInfo.Center.y = WinInfo.Height / 2 + WinInfo.Pos.Y;
+	ScreenToClient(g_hWnd, &WinInfo.Center);
+	
 
 	MovingFactor.Down = 0;
 	MovingFactor.Backward = 0;
@@ -359,30 +378,43 @@ bool Init(void)
 	MovingFactor.Left = 0;
 	MovingFactor.Right = 0;
 	MovingFactor.Up = 0;
+	
+	QueryPerformanceFrequency(&Frequency);
+	QueryPerformanceCounter(&PrevTime);
 	return true;
 }
 
 void Update(void)
 {
-
-
 	XMFLOAT4 moveVec;
 	moveVec.x = MovingFactor.Right - MovingFactor.Left;
 	moveVec.y = MovingFactor.Up - MovingFactor.Down;
 	moveVec.z = MovingFactor.Forward - MovingFactor.Backward;
 	moveVec.w = 0;
-	XMStoreFloat4(&moveVec, XMVector3Normalize(XMLoadFloat4(&moveVec)));
+	float deltaTime = GetDeltaTime();
+	
+	XMVECTOR v = XMVector3Normalize(XMLoadFloat4(&moveVec));
+	v = XMVectorScale(v, deltaTime * 10);
+	XMStoreFloat4(&moveVec, v);
 
-	int xDelta = 0;
-	int yDelta = 0;
+	float xDelta = 0;
+	float yDelta = 0;
 
 	Position screenCenter = { (WinInfo.Pos.X + WinInfo.Width / 2), (WinInfo.Pos.Y + WinInfo.Height / 2) };
 	if (bFixMousePos)
 	{
 		SetCursorPos(screenCenter.X, screenCenter.Y);
 
-		xDelta = MousePos.X - screenCenter.X;
-		yDelta = MousePos.Y - screenCenter.Y;
+		xDelta = static_cast<float>(MousePos.X - WinInfo.Center.x);
+		xDelta /= WinInfo.Width;
+
+		yDelta = static_cast<float>(MousePos.Y - WinInfo.Center.y);
+		/*char outStr[30] = "";
+		_itoa_s(MousePos.X - WinInfo.Width / 2, outStr, 10);
+		outStr[29] = 0;
+		outStr[28] = 10;
+		OutputDebugStringA(outStr);*/
+		yDelta /= WinInfo.Height;
 	}
 	MainCamera->Update(moveVec, xDelta, -yDelta);
 }
@@ -397,7 +429,7 @@ void Render(void)
 
 
 	ID3D11Buffer* frameCBBuffer = base.GetCBFrameBuffer();
-	CBFrame cbFrame;
+	
 	
 	
 
@@ -405,11 +437,14 @@ void Render(void)
 	immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     immediateContext->IASetInputLayout(base.GetInputLayout());
+	CBFrame cbFrame;
+	cbFrame.View = MainCamera->GetViewMatrix();
 
+	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
     
     pSphere->Draw();
-    pMap->Draw();
+    //pMap->Draw();
     
     swapChain->Present(1, 0);
 }
@@ -419,4 +454,17 @@ void Shutdown(void)
     delete pMap;
     delete pSphere;
     delete pSPGen;
+	base.Cleanup();
 }
+
+float GetDeltaTime(void)
+{
+	LARGE_INTEGER currentTime;
+	QueryPerformanceCounter(&currentTime);
+
+	float deltaTime = static_cast<float>(currentTime.QuadPart - PrevTime.QuadPart) / Frequency.QuadPart;
+	PrevTime = currentTime;
+
+	return deltaTime;
+}
+

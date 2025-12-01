@@ -47,12 +47,6 @@ bool D3D11Base::Initialize(HWND hWnd)
 		goto LB_FAILED_CREATE_CONST_BUFFERS;
 	}
 
-	/*if (!createRasterizer())
-	{
-		goto LB_FAILED_CREATE_RASTER_STATE;
-	}*/
-
-
 
 	{
 		// Default input layout
@@ -73,7 +67,6 @@ bool D3D11Base::Initialize(HWND hWnd)
 
 	return true;
 
-LB_FAILED_CREATE_RASTER_STATE:
 LB_FAILED_CREATE_CONST_BUFFERS:
 LB_FAILED_CREATE_RENDER_TARGETS:
 	mSwapChain->Release();
@@ -104,10 +97,6 @@ ID3D11DepthStencilView* D3D11Base::GetDepthStencilView(void) const {
 
 IDXGISwapChain* D3D11Base::GetSwapChain(void) const {
 	return mSwapChain;
-}
-
-ID3D11RasterizerState* D3D11Base::GetRasterState(void) const {
-	return mRasterState;
 }
 
 ID3DBlob* D3D11Base::CompileShader(const LPWSTR filePath, /*const LPCSTR entryPoint,*/ const LPCSTR target) const
@@ -278,6 +267,10 @@ void D3D11Base::Cleanup(void)
 		(*i)->Release();
 	}
 	delete mVertexShaders;
+
+	mCBFrameBuffer->Release();
+	mCBObjectBuffer->Release();
+	mCBResizeBuffer->Release();
 
 	mInputLayout->Release();
 
@@ -481,31 +474,6 @@ LB_FAILED_CREATE_DEPTH_STENCIL:
 	mRenderTargetView->Release();
 LB_FAILED_CREATE_RENDER_TARGET_VIEW:
 	return false;
-}
-
-bool D3D11Base::createRasterizer(void) 
-{
-	HRESULT hr = NULL;
-
-	D3D11_RASTERIZER_DESC rasterDesc;
-	ZeroMemory(&rasterDesc, sizeof(rasterDesc));
-	rasterDesc.FillMode = D3D11_FILL_SOLID;
-	rasterDesc.CullMode = D3D11_CULL_NONE;
-	rasterDesc.FrontCounterClockwise = FALSE;
-	rasterDesc.DepthBias = 0;
-	rasterDesc.DepthBiasClamp = 0.0f;
-	rasterDesc.SlopeScaledDepthBias = 0.0f;
-	rasterDesc.DepthClipEnable = TRUE;
-	rasterDesc.ScissorEnable = FALSE;
-	rasterDesc.MultisampleEnable = FALSE;
-	rasterDesc.AntialiasedLineEnable = FALSE;
-	hr = mDevice->CreateRasterizerState(&rasterDesc, &mRasterState);
-	if (FAILED(hr))
-	{
-		return false;
-	}
-
-	return true;
 }
 
 void D3D11Base::setFullSizeViewport(UINT width, UINT height)

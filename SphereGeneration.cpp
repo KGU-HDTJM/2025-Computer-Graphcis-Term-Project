@@ -62,6 +62,7 @@ SphereGenerator::~SphereGenerator()
 	mHullShader->Release();
 	mDomainShader->Release();
 	mPixelShader->Release();
+	mTessellationBuffer->Release();
 }
 
 Sphere* SphereGenerator::CreateSphere(float radius, const XMFLOAT4& pos) const
