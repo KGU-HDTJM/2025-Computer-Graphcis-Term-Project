@@ -442,9 +442,10 @@ void Render(void)
 
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
-    
+	pMap->UpdateCameraPos(MainCamera->GetPosition());
+
     pSphere->Draw();
-    //pMap->Draw();
+    pMap->Draw();
     
     swapChain->Present(1, 0);
 }

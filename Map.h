@@ -12,7 +12,12 @@ class Map
 {
 public:
 
-	Map(void) : mBase(nullptr), mIndexBuffer(nullptr), mVertexBuffer(nullptr){}
+	Map(void) : mBase(nullptr), mIndexBuffer(nullptr), mVertexBuffer(nullptr)
+	{
+		mVertices = eastl::vector<Vertex>();
+		mIndices = eastl::vector<uint32_t>();
+		mCamPos = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
+	}
 	Map(D3D11Base* _base) : mBase(_base)
 	{
 		srand(static_cast<uint32_t>(std::time(nullptr)));
@@ -53,18 +58,16 @@ private:
 
 	bool createBuffers(void);
 	void updateVertexBuffer(const eastl::vector<Vertex>& newPerlin);
-	void updateIndexBuffer(const int scale = 1);
+	void updateIndexBuffer(void);
 
 private:
 
 	const char* VERTEX_FILE = "perlin.vx.bin";
 	const char* INDEX_FILE  = "perlin.ix.bin";
-	const int CHUNK_SIZE = 40;
 	
-	XMFLOAT4 camPos;
+	XMFLOAT4 mCamPos;
 
 	D3D11Base* mBase = nullptr;
-
 	eastl::vector<uint32_t> mIndices;
 	eastl::vector<Vertex> mVertices;
 

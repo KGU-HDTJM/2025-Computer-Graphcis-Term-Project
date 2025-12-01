@@ -43,7 +43,7 @@ size_t Map::GetVertexSize(void) const
 
 void Map::UpdateCameraPos(const XMFLOAT4& pos)
 {
-	camPos = pos;
+	mCamPos = pos;
 }
 
 void Map::AddPerlinLayer(int x, int y, int scale)
@@ -54,6 +54,8 @@ void Map::AddPerlinLayer(int x, int y, int scale)
 
 void Map::Draw(void)
 {
+	updateIndexBuffer();
+
 	ID3D11Buffer* cbWorld	 = mBase->GetCBObjectBuffer();   // World
 	ID3D11Buffer* cbView	 = mBase->GetCBFrameBuffer();    // View
 	ID3D11Buffer* cbProj	 = mBase->GetCBResizeBuffer(); // Projection
@@ -77,8 +79,6 @@ void Map::Draw(void)
 	ctx->VSSetConstantBuffers(0, 1, &cbWorld); 
 	ctx->VSSetConstantBuffers(1, 1, &cbView);  
 	ctx->VSSetConstantBuffers(2, 1, &cbProj);  
-	ctx->HSSetShader(nullptr, nullptr, 0);
-	ctx->DSSetShader(nullptr, nullptr, 0);
 	ctx->PSSetConstantBuffers(0, 1, &cbWorld);
 
 	// IA 설정
@@ -96,7 +96,6 @@ void Map::Draw(void)
 
 bool Map::loadMeshData(void)
 {
-	//TODO : remove these file io after get vertex and index
 	std::ifstream fin(VERTEX_FILE, std::ios::binary);
 	if (!fin.is_open())
 	{
@@ -109,26 +108,10 @@ bool Map::loadMeshData(void)
 
 	vector<Vertex> vertices(vecSize);
 
-	std::ifstream ixIn(INDEX_FILE, std::ios::binary);
-	if (!ixIn.is_open())
-	{
-		return false;
-	}
-	ixIn.seekg(0, std::ios::end);
-	std::streamsize ixSize = ixIn.tellg();
-	ixIn.seekg(0, std::ios::beg);
-	size_t indSize = ixSize / sizeof(uint32_t);
-
-	vector<uint32_t> indices(ixSize);
-
-	ixIn.read(reinterpret_cast<char*>(indices.data()), indSize * sizeof(uint32_t));
-	ixIn.close();
-
 	fin.read(reinterpret_cast<char*>(vertices.data()), vecSize * sizeof(Vertex));
 	fin.close();
 
 	mVertices = vertices;
-	mIndices = indices;
 
 	return true;
 }
@@ -261,6 +244,8 @@ bool Map::createBuffers(void)
 {
 	HRESULT hr;
 
+	const int MAX_INDEX_BUFFER_SIZE = 120 * 120 * 6;
+
 	ID3D11Device* dev = mBase->GetDevice();
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
@@ -281,13 +266,14 @@ bool Map::createBuffers(void)
 	if (FAILED(hr))
 	{
 		goto LB_FAILED_CREATE_VERTEX_BUFFER;
-	}
+	} 
 
-	bufferDesc.ByteWidth = (UINT)(sizeof(uint32_t) * mIndices.size());
+	bufferDesc.ByteWidth = (UINT)(sizeof(uint32_t) * MAX_INDEX_BUFFER_SIZE);
 	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	initData.pSysMem = mIndices.data();
 
-	hr = dev->CreateBuffer(&bufferDesc, &initData, &mIndexBuffer);
+	//initData.pSysMem = mIndices.data();
+
+	hr = dev->CreateBuffer(&bufferDesc, nullptr, &mIndexBuffer);
 	if (FAILED(hr))
 	{
 		goto LB_FAILED_CREATE_INDEX_BUFFER;
@@ -303,9 +289,58 @@ LB_FAILED_CREATE_VERTEX_BUFFER:
 }
 
 
-void Map::updateIndexBuffer(const int scale)
+void Map::updateIndexBuffer(void)
 {
+	mIndices.clear();
 
+	const int CHUNK_SIZE = 40;
+	const int EXTEND_SIZE = 4;
+	
+	const int MAP_SIZE = 400;
+	const int HALF_MAP_SIZE = 200;
+	
+	const int INDEX_PER_TRIANGLE = 6;
+
+	int camX = (mCamPos.x + HALF_MAP_SIZE) / EXTEND_SIZE;
+	int camZ = (mCamPos.z + HALF_MAP_SIZE) / EXTEND_SIZE;
+
+	if (camX < -HALF_MAP_SIZE || camX > HALF_MAP_SIZE ||
+		camZ < -HALF_MAP_SIZE || camZ > HALF_MAP_SIZE)
+	{
+		return;
+	}
+
+	int maxX = (camX + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE - 1 : camX + CHUNK_SIZE;
+	int maxZ = (camZ + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE - 1: camZ + CHUNK_SIZE;
+	int minX = (camX - CHUNK_SIZE) < -HALF_MAP_SIZE ? -HALF_MAP_SIZE : camX - CHUNK_SIZE;
+	int minZ = (camZ - CHUNK_SIZE) < -HALF_MAP_SIZE ? -HALF_MAP_SIZE : camZ - CHUNK_SIZE;
+
+	for (int z = minZ; z < maxZ; ++z)
+	{
+		for (int x = minX; x < maxX; ++x)
+		{
+			int p00 = x + MAP_SIZE * z;
+			int p01 = (x + 1) + MAP_SIZE * z;
+			int p10 = x + MAP_SIZE * (z + 1);
+			int p11 = (x + 1) + MAP_SIZE * (z + 1);
+
+			mIndices.push_back(static_cast<uint32_t>(p00));
+			mIndices.push_back(static_cast<uint32_t>(p11));
+			mIndices.push_back(static_cast<uint32_t>(p01));
+
+			mIndices.push_back(static_cast<uint32_t>(p00));
+			mIndices.push_back(static_cast<uint32_t>(p10));
+			mIndices.push_back(static_cast<uint32_t>(p11));
+		}
+	}
+
+	HRESULT hr;
+
+	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
+
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = mIndices.data();
+	ctx->UpdateSubresource(mIndexBuffer, 0, nullptr, mIndices.data(), 0, 0);
 }
 
 
