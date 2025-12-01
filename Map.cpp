@@ -19,6 +19,8 @@ inline float fade(float t)
 	return ((6 * t - 15) * t + 10) * t * t * t;
 }
 
+
+
 size_t Map::GetIndexCount(void)
 {
 	return mIndices.size();
@@ -39,6 +41,10 @@ size_t Map::GetVertexSize(void) const
 	return sizeof(Vertex);
 }
 
+void Map::UpdateCameraPos(const XMFLOAT4& pos)
+{
+	camPos = pos;
+}
 
 void Map::AddPerlinLayer(int x, int y, int scale)
 {
@@ -48,22 +54,22 @@ void Map::AddPerlinLayer(int x, int y, int scale)
 
 void Map::Draw(void)
 {
-	ID3D11Buffer* cbWorld	 = mBase->GetCBChangeEveryFrame();   // World
-	ID3D11Buffer* cbView	 = mBase->GetCBNeverChangeBuffer();    // View
-	ID3D11Buffer* cbProj	 = mBase->GetCBChangeOnResizeBuffer(); // Projection
+	ID3D11Buffer* cbWorld	 = mBase->GetCBObjectBuffer();   // World
+	ID3D11Buffer* cbView	 = mBase->GetCBFrameBuffer();    // View
+	ID3D11Buffer* cbProj	 = mBase->GetCBResizeBuffer(); // Projection
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
-	CBFrame cbFrame;
+	CBObject cbObject;
 
 	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
 
 
 	XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
-	cbFrame.World = scale * translate;
-	cbFrame.World = XMMatrixTranspose(cbFrame.World);
+	cbObject.World = scale * translate;
+	cbObject.World = XMMatrixTranspose(cbObject.World);
 
 
-	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbFrame, 0, 0);
+	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbObject, 0, 0);
 
 	ctx->VSSetShader(mBase->GetVertexShader(eShaderID::Basic), nullptr, 0);
 	ctx->PSSetShader(mBase->GetPixelShader(eShaderID::Basic), nullptr, 0);
@@ -85,6 +91,46 @@ void Map::Draw(void)
 
 	// Draw
 	ctx->DrawIndexed(static_cast<UINT>(mIndices.size()), 0, 0);
+}
+
+
+bool Map::loadMeshData(void)
+{
+	//TODO : remove these file io after get vertex and index
+	std::ifstream fin(VERTEX_FILE, std::ios::binary);
+	if (!fin.is_open())
+	{
+		return false;
+	}
+	fin.seekg(0, std::ios::end);
+	std::streamsize size = fin.tellg();
+	fin.seekg(0, std::ios::beg);
+	size_t vecSize = size / sizeof(Vertex);
+
+	vector<Vertex> vertices(vecSize);
+
+	std::ifstream ixIn(INDEX_FILE, std::ios::binary);
+	if (!ixIn.is_open())
+	{
+		return false;
+	}
+	ixIn.seekg(0, std::ios::end);
+	std::streamsize ixSize = ixIn.tellg();
+	ixIn.seekg(0, std::ios::beg);
+	size_t indSize = ixSize / sizeof(uint32_t);
+
+	vector<uint32_t> indices(ixSize);
+
+	ixIn.read(reinterpret_cast<char*>(indices.data()), indSize * sizeof(uint32_t));
+	ixIn.close();
+
+	fin.read(reinterpret_cast<char*>(vertices.data()), vecSize * sizeof(Vertex));
+	fin.close();
+
+	mVertices = vertices;
+	mIndices = indices;
+
+	return true;
 }
 
 
@@ -114,8 +160,8 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 	{
 		for (int i = 0; i < GRID_WIDTH; ++i)
 		{
-			const float px = (float)i / (float)(GRID_WIDTH);
-			const float py = (float)j / (float)(GRID_HEIGHT);
+			const float px = ((float)i / (float)(GRID_WIDTH));
+			const float py = ((float)j / (float)(GRID_HEIGHT));
 			float standX = px - floorf(px);
 			float standY = py - floorf(py);
 
@@ -140,7 +186,6 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 			float n1 = lerp(p10, p11, v);
 			float result = lerp(n0, n1, u);
 
-			// adjust height scale as before
 			float adjustHeight = (result + 1.0f) * 0.5f * 10.0f + 1.0f;
 
 			heights[i + GRID_WIDTH * j] = adjustHeight;
@@ -183,16 +228,6 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 		}
 	}
 
-	// - store vector to binary -
-	std::ofstream fout(VERTEX_FILE, std::ios::binary);
-	if (!fout.is_open())
-	{
-		MessageBoxA(nullptr, "VERTEX_FILE not fount", "Error", MB_OK);
-		assert(false);
-	}
-	fout.write(reinterpret_cast<char*>(vertices.data()), vertices.size() * sizeof(Vertex));
-	fout.close();
-
 	return vertices;
 }
 
@@ -226,22 +261,6 @@ bool Map::createBuffers(void)
 {
 	HRESULT hr;
 
-	std::ifstream fin(VERTEX_FILE, std::ios::binary);
-	if (!fin.is_open())
-	{
-		MessageBoxA(nullptr, "VERTEX_FILE not fount", "Error", MB_OK);
-		assert(false);
-	}
-	fin.seekg(0, std::ios::end);
-	std::streamsize size = fin.tellg();
-	fin.seekg(0, std::ios::beg);
-	size_t vecSize = size / sizeof(Vertex);
-	
-	vector<Vertex> vertices(vecSize);
-
-	fin.read(reinterpret_cast<char*>(vertices.data()), vecSize * sizeof(Vertex));
-	fin.close();
-
 	ID3D11Device* dev = mBase->GetDevice();
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
@@ -254,9 +273,9 @@ bool Map::createBuffers(void)
 	D3D11_SUBRESOURCE_DATA initData;
 	ZeroMemory(&initData, sizeof(initData));
 
-	bufferDesc.ByteWidth = (UINT)(sizeof(Vertex) * vertices.size());
+	bufferDesc.ByteWidth = (UINT)(sizeof(Vertex) * mVertices.size());
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	initData.pSysMem = vertices.data();
+	initData.pSysMem = mVertices.data();
 
 	hr = dev->CreateBuffer(&bufferDesc, &initData, &mVertexBuffer);
 	if (FAILED(hr))
@@ -282,6 +301,13 @@ LB_FAILED_CREATE_VERTEX_BUFFER:
 
 	return false;
 }
+
+
+void Map::updateIndexBuffer(const int scale)
+{
+
+}
+
 
 void Map::updateVertexBuffer(const vector<Vertex>& newPerlin)
 {

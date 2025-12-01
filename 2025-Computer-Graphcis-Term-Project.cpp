@@ -336,7 +336,7 @@ bool Init(void)
     if (!base.Initialize(g_hWnd)) {
         return false;
     }
-    pMap = new Map(&base, 10, 10, 4);
+    pMap = new Map(&base);
 
 	pSPGen = new SphereGenerator(&base);
 

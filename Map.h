@@ -13,13 +13,15 @@ class Map
 public:
 
 	Map(void) : mBase(nullptr), mIndexBuffer(nullptr), mVertexBuffer(nullptr){}
-	Map(D3D11Base* _base, const int _x, const int _y, const int _scale) : mBase(_base)
+	Map(D3D11Base* _base) : mBase(_base)
 	{
 		srand(static_cast<uint32_t>(std::time(nullptr)));
-
-		createVertex(_x, _y, _scale);
-		createIndex(_x, _y, _scale);
-
+		
+		if (!loadMeshData())
+		{
+			MessageBoxA(nullptr, "Failed to load index and vertex", "Error", MB_OK);
+			assert(false);
+		}
 		if (!createBuffers())
 		{
 			MessageBoxA(nullptr, "Failed to create index and vertex buffer", "Error", MB_OK);
@@ -27,39 +29,45 @@ public:
 		}
 	}
 
-	void AddPerlinLayer(int x, int y, int scale);
-	void Draw(void);
-
-
 	~Map()
 	{
 		if (mVertexBuffer) { mVertexBuffer->Release(); }
 		if (mIndexBuffer) { mIndexBuffer->Release();   }
 	}
 
+	void AddPerlinLayer(int x, int y, int scale);
+	void Draw(void);
+
 	size_t GetIndexCount(void);
 	ID3D11Buffer* GetIndexBuffer(void);
 	ID3D11Buffer* GetVertexBuffer(void);
 	size_t GetVertexSize(void) const;
+	void UpdateCameraPos(const XMFLOAT4& pos);
 
 private:
 	
+	bool loadMeshData(void);
+
 	eastl::vector<Vertex> createVertex(const int& x, const int& y, const int& scale);
 	void createIndex(const int& x, const int& y, const int& scale);
 
 	bool createBuffers(void);
 	void updateVertexBuffer(const eastl::vector<Vertex>& newPerlin);
+	void updateIndexBuffer(const int scale = 1);
 
 private:
 
 	const char* VERTEX_FILE = "perlin.vx.bin";
 	const char* INDEX_FILE  = "perlin.ix.bin";
+	const int CHUNK_SIZE = 40;
 	
-	D3D11Base* mBase = nullptr;
+	XMFLOAT4 camPos;
 
-	ID3D11Buffer* mIndexBuffer  = nullptr;
-	ID3D11Buffer* mVertexBuffer = nullptr;
+	D3D11Base* mBase = nullptr;
 
 	eastl::vector<uint32_t> mIndices;
 	eastl::vector<Vertex> mVertices;
+
+	ID3D11Buffer* mIndexBuffer  = nullptr;
+	ID3D11Buffer* mVertexBuffer = nullptr;
 };
