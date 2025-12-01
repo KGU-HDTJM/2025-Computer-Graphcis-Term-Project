@@ -27,8 +27,8 @@ void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 {
 	if (xDelta * xDelta + yDelta * yDelta > FLT_EPSILON)
 	{
-		mYaw += xDelta / 100;
-		mPitch += yDelta / 100;
+		mYaw += xDelta;
+		mPitch += yDelta;
 	}
 	const float LIMIT = XM_PIDIV2 - FLT_EPSILON;
 	if (mPitch > LIMIT)
@@ -67,7 +67,7 @@ void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 
 XMMATRIX Camera::GetViewMatrix(void) const
 {
-	return XMMatrixTranspose(mViewTrans);
+	return mViewTrans;
 }
 
 const XMFLOAT4& Camera::GetPosition() const

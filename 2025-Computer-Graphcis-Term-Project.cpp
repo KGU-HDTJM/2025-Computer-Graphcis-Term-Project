@@ -229,12 +229,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case VK_ESCAPE:
 		{
 			bFixMousePos = !bFixMousePos;
-			ShowCursor(bFixMousePos);
-		}
-		break;
-		case 'R':
-		case 'r':
-		{
+			ShowCursor(!bFixMousePos);
 		}
 		break;
 		default:
@@ -416,7 +411,7 @@ void Update(void)
 		OutputDebugStringA(outStr);*/
 		yDelta /= WinInfo.Height;
 	}
-	MainCamera->Update(moveVec, xDelta, -yDelta);
+	MainCamera->Update(moveVec, xDelta * deltaTime * 10, -yDelta * deltaTime * 10);
 }
 
 void Render(void)
@@ -438,8 +433,7 @@ void Render(void)
 
     immediateContext->IASetInputLayout(base.GetInputLayout());
 	CBFrame cbFrame;
-	cbFrame.View = MainCamera->GetViewMatrix();
-
+	cbFrame.View = XMMatrixTranspose(MainCamera->GetViewMatrix());
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
     

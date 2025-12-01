@@ -16,6 +16,8 @@ public:
 	ID3D11DomainShader* GetDomainShader(void) const;
 	ID3D11PixelShader* GetPixelShader(void) const;
 	ID3D11Buffer* GetTessellationBuffer() const;
+	ID3D11Buffer* GetVertexBuffer(void) const;
+	ID3D11Buffer* GetIndexBuffer(UINT& count) const;
 
 private:
 	ID3D11Buffer* createVertexBuffer(UINT& count) const;
@@ -24,6 +26,9 @@ private:
 	
 private:
 	D3D11Base* mBase;
+	ID3D11Buffer* mVertexBuffer;
+	ID3D11Buffer* mIndexBuffer;
+	UINT mIndexCount;
 	ID3D11VertexShader* mVertexShader;
 	ID3D11HullShader* mHullShader;
 	ID3D11DomainShader* mDomainShader;

@@ -6,10 +6,7 @@
 using namespace DirectX;
 
 Sphere::~Sphere()
-{
-	if (mVertexBuffer) mVertexBuffer->Release();
-	if (mIndexBuffer)  mIndexBuffer->Release();
-	
+{	
 }
 
 void Sphere::Draw(void)
@@ -18,12 +15,16 @@ void Sphere::Draw(void)
 	ID3D11Buffer* cbView = mBase->GetCBFrameBuffer();    // View
 	ID3D11Buffer* cbProj = mBase->GetCBResizeBuffer(); // Projection
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
+	
+	ID3D11Buffer* vertexBuffer = mGenerator->GetVertexBuffer();
+	UINT indexCount;
+	ID3D11Buffer* indexBuffer = mGenerator->GetIndexBuffer(indexCount);
 
 	// Prepare per-frame CB (World)
-	CBObject cbFrame;
-	cbFrame.World = XMMatrixTranspose(mCBFrame.World);
+	CBObject cbObject;
+	cbObject.World = XMMatrixTranspose(mCBObject.World);
 
-	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbFrame, 0, 0);
+	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbObject, 0, 0);
 
 
 	// Set shaders
@@ -55,14 +56,14 @@ void Sphere::Draw(void)
 	// IA setup
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	ctx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-	ctx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	ctx->IASetVertexBuffers(0, 1, &vertexBuffer, &stride, &offset);
+	ctx->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	// Use 3-control-point patches for tessellation
 	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 
 	// Draw
-	ctx->DrawIndexed(mIndexCount, 0, 0);
+	ctx->DrawIndexed(indexCount, 0, 0);
 	ctx->HSSetShader(nullptr, nullptr, 0);
 	ctx->DSSetShader(nullptr, nullptr, 0);
 }

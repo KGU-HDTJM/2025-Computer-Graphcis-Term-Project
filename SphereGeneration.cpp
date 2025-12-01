@@ -5,7 +5,7 @@
 #define VERTEX_COUNT (8)
 #define INDEX_COUNT (36)
 
-static Vertex cubeVertices[VERTEX_COUNT] =
+Vertex cubeVertices[VERTEX_COUNT] =
 {
 	{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.0f, 1.0f) },
 	{ XMFLOAT4(-1.0f,  1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.0f, 0.0f) },
@@ -20,7 +20,7 @@ static Vertex cubeVertices[VERTEX_COUNT] =
 };
 
 // 큐브 인덱스 데이터
-static const uint32_t CUBE_INDICES[INDEX_COUNT] =
+const uint32_t CUBE_INDICES[INDEX_COUNT] =
 {
 	0,1,2, 0,2,3, // 앞
 	4,6,5, 4,7,6, // 뒤
@@ -54,6 +54,10 @@ SphereGenerator::SphereGenerator(D3D11Base* base)
 		cubeVertices[i].Normal.w = 0.F;
 	}
 	initConstantBuffer();
+	UINT count;
+	mVertexBuffer = createVertexBuffer(count);
+	mIndexBuffer = createIndexBuffer(count);
+	mIndexCount = count;
 }
 
 SphereGenerator::~SphereGenerator()
@@ -63,20 +67,13 @@ SphereGenerator::~SphereGenerator()
 	mDomainShader->Release();
 	mPixelShader->Release();
 	mTessellationBuffer->Release();
+	mVertexBuffer->Release();
+	mIndexBuffer->Release();
 }
 
 Sphere* SphereGenerator::CreateSphere(float radius, const XMFLOAT4& pos) const
 {
-	UINT vertexCount;
-	ID3D11Buffer* vertexBuffer = createVertexBuffer(vertexCount);
-	UINT indexCount;
-	ID3D11Buffer* indexBuffer = createIndexBuffer(indexCount);
-	
-	// get world matrix
-	XMVECTOR posVec = XMLoadFloat4(&pos);
-	XMMATRIX world = XMMatrixTranslationFromVector(posVec);
-
-	Sphere* res = new Sphere(mBase, this, radius, vertexBuffer, indexBuffer, indexCount, world);
+	Sphere* res = new Sphere(mBase, this, radius, pos);
 	return res;	
 }
 
@@ -103,6 +100,17 @@ ID3D11PixelShader* SphereGenerator::GetPixelShader(void) const
 ID3D11Buffer* SphereGenerator::GetTessellationBuffer() const
 {
 	return mTessellationBuffer;
+}
+
+ID3D11Buffer* SphereGenerator::GetVertexBuffer(void) const
+{
+	return mVertexBuffer;
+}
+
+ID3D11Buffer* SphereGenerator::GetIndexBuffer(UINT& count) const
+{
+	count = mIndexCount;
+	return mIndexBuffer;
 }
 
 ID3D11Buffer* SphereGenerator::createVertexBuffer(UINT& count) const
