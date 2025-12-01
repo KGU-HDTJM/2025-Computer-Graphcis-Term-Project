@@ -365,6 +365,26 @@ bool Init(void)
 void Update(void)
 {
 
+
+	XMFLOAT4 moveVec;
+	moveVec.x = MovingFactor.Right - MovingFactor.Left;
+	moveVec.y = MovingFactor.Up - MovingFactor.Down;
+	moveVec.z = MovingFactor.Forward - MovingFactor.Backward;
+	moveVec.w = 0;
+	XMStoreFloat4(&moveVec, XMVector3Normalize(XMLoadFloat4(&moveVec)));
+
+	int xDelta = 0;
+	int yDelta = 0;
+
+	Position screenCenter = { (WinInfo.Pos.X + WinInfo.Width / 2), (WinInfo.Pos.Y + WinInfo.Height / 2) };
+	if (bFixMousePos)
+	{
+		SetCursorPos(screenCenter.X, screenCenter.Y);
+
+		xDelta = MousePos.X - screenCenter.X;
+		yDelta = MousePos.Y - screenCenter.Y;
+	}
+	MainCamera->Update(moveVec, xDelta, -yDelta);
 }
 
 void Render(void)
