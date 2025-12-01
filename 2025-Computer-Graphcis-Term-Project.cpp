@@ -346,7 +346,7 @@ bool Init(void)
     if (!base.Initialize(g_hWnd)) {
         return false;
     }
-    // Map = new Map(&base, 10, 10, 4);
+    pMap = new Map(&base);
 
 	pSPGen = new SphereGenerator(&base);
 
@@ -436,9 +436,10 @@ void Render(void)
 	cbFrame.View = XMMatrixTranspose(MainCamera->GetViewMatrix());
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
-    
+	pMap->UpdateCameraPos(MainCamera->GetPosition());
+
     pSphere->Draw();
-    //pMap->Draw();
+    pMap->Draw();
     
     swapChain->Present(1, 0);
 }

@@ -19,6 +19,8 @@ inline float fade(float t)
 	return ((6 * t - 15) * t + 10) * t * t * t;
 }
 
+
+
 size_t Map::GetIndexCount(void)
 {
 	return mIndices.size();
@@ -39,6 +41,10 @@ size_t Map::GetVertexSize(void) const
 	return sizeof(Vertex);
 }
 
+void Map::UpdateCameraPos(const XMFLOAT4& pos)
+{
+	mCamPos = pos;
+}
 
 void Map::AddPerlinLayer(int x, int y, int scale)
 {
@@ -48,17 +54,19 @@ void Map::AddPerlinLayer(int x, int y, int scale)
 
 void Map::Draw(void)
 {
+	updateIndexBuffer();
+
 	ID3D11Buffer* cbWorld	 = mBase->GetCBObjectBuffer();   // World
 	ID3D11Buffer* cbView	 = mBase->GetCBFrameBuffer();    // View
 	ID3D11Buffer* cbProj	 = mBase->GetCBResizeBuffer(); // Projection
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
+
 	CBObject cbObj;
 
 	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
-
-
 	XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
+
 	cbObj.World = scale * translate;
 	cbObj.World = XMMatrixTranspose(cbObj.World);
 
@@ -71,8 +79,6 @@ void Map::Draw(void)
 	ctx->VSSetConstantBuffers(0, 1, &cbWorld); 
 	ctx->VSSetConstantBuffers(1, 1, &cbView);  
 	ctx->VSSetConstantBuffers(2, 1, &cbProj);  
-	ctx->HSSetShader(nullptr, nullptr, 0);
-	ctx->DSSetShader(nullptr, nullptr, 0);
 	ctx->PSSetConstantBuffers(0, 1, &cbWorld);
 
 	// IA 설정
@@ -85,6 +91,29 @@ void Map::Draw(void)
 
 	// Draw
 	ctx->DrawIndexed(static_cast<UINT>(mIndices.size()), 0, 0);
+}
+
+
+bool Map::loadMeshData(void)
+{
+	std::ifstream fin(VERTEX_FILE, std::ios::binary);
+	if (!fin.is_open())
+	{
+		return false;
+	}
+	fin.seekg(0, std::ios::end);
+	std::streamsize size = fin.tellg();
+	fin.seekg(0, std::ios::beg);
+	size_t vecSize = size / sizeof(Vertex);
+
+	vector<Vertex> vertices(vecSize);
+
+	fin.read(reinterpret_cast<char*>(vertices.data()), vecSize * sizeof(Vertex));
+	fin.close();
+
+	mVertices = vertices;
+
+	return true;
 }
 
 
@@ -114,8 +143,8 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 	{
 		for (int i = 0; i < GRID_WIDTH; ++i)
 		{
-			const float px = (float)i / (float)(GRID_WIDTH);
-			const float py = (float)j / (float)(GRID_HEIGHT);
+			const float px = ((float)i / (float)(GRID_WIDTH));
+			const float py = ((float)j / (float)(GRID_HEIGHT));
 			float standX = px - floorf(px);
 			float standY = py - floorf(py);
 
@@ -140,7 +169,6 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 			float n1 = lerp(p10, p11, v);
 			float result = lerp(n0, n1, u);
 
-			// adjust height scale as before
 			float adjustHeight = (result + 1.0f) * 0.5f * 10.0f + 1.0f;
 
 			heights[i + GRID_WIDTH * j] = adjustHeight;
@@ -183,16 +211,6 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 		}
 	}
 
-	// - store vector to binary -
-	std::ofstream fout(VERTEX_FILE, std::ios::binary);
-	if (!fout.is_open())
-	{
-		MessageBoxA(nullptr, "VERTEX_FILE not fount", "Error", MB_OK);
-		assert(false);
-	}
-	fout.write(reinterpret_cast<char*>(vertices.data()), vertices.size() * sizeof(Vertex));
-	fout.close();
-
 	return vertices;
 }
 
@@ -226,21 +244,7 @@ bool Map::createBuffers(void)
 {
 	HRESULT hr;
 
-	std::ifstream fin(VERTEX_FILE, std::ios::binary);
-	if (!fin.is_open())
-	{
-		MessageBoxA(nullptr, "VERTEX_FILE not fount", "Error", MB_OK);
-		assert(false);
-	}
-	fin.seekg(0, std::ios::end);
-	std::streamsize size = fin.tellg();
-	fin.seekg(0, std::ios::beg);
-	size_t vecSize = size / sizeof(Vertex);
-	
-	vector<Vertex> vertices(vecSize);
-
-	fin.read(reinterpret_cast<char*>(vertices.data()), vecSize * sizeof(Vertex));
-	fin.close();
+	const int MAX_INDEX_BUFFER_SIZE = 120 * 120 * 6;
 
 	ID3D11Device* dev = mBase->GetDevice();
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
@@ -254,21 +258,22 @@ bool Map::createBuffers(void)
 	D3D11_SUBRESOURCE_DATA initData;
 	ZeroMemory(&initData, sizeof(initData));
 
-	bufferDesc.ByteWidth = (UINT)(sizeof(Vertex) * vertices.size());
+	bufferDesc.ByteWidth = (UINT)(sizeof(Vertex) * mVertices.size());
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	initData.pSysMem = vertices.data();
+	initData.pSysMem = mVertices.data();
 
 	hr = dev->CreateBuffer(&bufferDesc, &initData, &mVertexBuffer);
 	if (FAILED(hr))
 	{
 		goto LB_FAILED_CREATE_VERTEX_BUFFER;
-	}
+	} 
 
-	bufferDesc.ByteWidth = (UINT)(sizeof(uint32_t) * mIndices.size());
+	bufferDesc.ByteWidth = (UINT)(sizeof(uint32_t) * MAX_INDEX_BUFFER_SIZE);
 	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	initData.pSysMem = mIndices.data();
 
-	hr = dev->CreateBuffer(&bufferDesc, &initData, &mIndexBuffer);
+	//initData.pSysMem = mIndices.data();
+
+	hr = dev->CreateBuffer(&bufferDesc, nullptr, &mIndexBuffer);
 	if (FAILED(hr))
 	{
 		goto LB_FAILED_CREATE_INDEX_BUFFER;
@@ -282,6 +287,62 @@ LB_FAILED_CREATE_VERTEX_BUFFER:
 
 	return false;
 }
+
+
+void Map::updateIndexBuffer(void)
+{
+	mIndices.clear();
+
+	const int CHUNK_SIZE = 40;
+	const int EXTEND_SIZE = 4;
+	
+	const int MAP_SIZE = 400;
+	const int HALF_MAP_SIZE = 200;
+	
+	const int INDEX_PER_TRIANGLE = 6;
+
+	int camX = (mCamPos.x + HALF_MAP_SIZE) / EXTEND_SIZE;
+	int camZ = (mCamPos.z + HALF_MAP_SIZE) / EXTEND_SIZE;
+
+	if (camX < -HALF_MAP_SIZE || camX > HALF_MAP_SIZE ||
+		camZ < -HALF_MAP_SIZE || camZ > HALF_MAP_SIZE)
+	{
+		return;
+	}
+
+	int maxX = (camX + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE - 1 : camX + CHUNK_SIZE;
+	int maxZ = (camZ + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE - 1: camZ + CHUNK_SIZE;
+	int minX = (camX - CHUNK_SIZE) < -HALF_MAP_SIZE ? -HALF_MAP_SIZE : camX - CHUNK_SIZE;
+	int minZ = (camZ - CHUNK_SIZE) < -HALF_MAP_SIZE ? -HALF_MAP_SIZE : camZ - CHUNK_SIZE;
+
+	for (int z = minZ; z < maxZ; ++z)
+	{
+		for (int x = minX; x < maxX; ++x)
+		{
+			int p00 = x + MAP_SIZE * z;
+			int p01 = (x + 1) + MAP_SIZE * z;
+			int p10 = x + MAP_SIZE * (z + 1);
+			int p11 = (x + 1) + MAP_SIZE * (z + 1);
+
+			mIndices.push_back(static_cast<uint32_t>(p00));
+			mIndices.push_back(static_cast<uint32_t>(p11));
+			mIndices.push_back(static_cast<uint32_t>(p01));
+
+			mIndices.push_back(static_cast<uint32_t>(p00));
+			mIndices.push_back(static_cast<uint32_t>(p10));
+			mIndices.push_back(static_cast<uint32_t>(p11));
+		}
+	}
+
+	HRESULT hr;
+
+	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
+
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = mIndices.data();
+	ctx->UpdateSubresource(mIndexBuffer, 0, nullptr, mIndices.data(), 0, 0);
+}
+
 
 void Map::updateVertexBuffer(const vector<Vertex>& newPerlin)
 {
