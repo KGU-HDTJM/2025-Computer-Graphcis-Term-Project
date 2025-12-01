@@ -22,6 +22,8 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND g_hWnd;
+float DeltaTime;
+
 
 // TODO: Pope Coding standard
 D3D11Base base;
@@ -52,6 +54,11 @@ struct RectInfo {
 	UINT Height;
 } WinInfo;
 
+// timer
+
+LARGE_INTEGER Frequency;
+LARGE_INTEGER PrevTime;
+
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -62,6 +69,7 @@ bool Init(void);
 void Update(void);
 void Render(void);
 void Shutdown(void);
+float GetDeltaTime(void);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -359,19 +367,24 @@ bool Init(void)
 	MovingFactor.Left = 0;
 	MovingFactor.Right = 0;
 	MovingFactor.Up = 0;
+
+	QueryPerformanceFrequency(&Frequency);
+	QueryPerformanceCounter(&PrevTime);
 	return true;
 }
 
 void Update(void)
 {
-
-
 	XMFLOAT4 moveVec;
 	moveVec.x = MovingFactor.Right - MovingFactor.Left;
 	moveVec.y = MovingFactor.Up - MovingFactor.Down;
 	moveVec.z = MovingFactor.Forward - MovingFactor.Backward;
 	moveVec.w = 0;
-	XMStoreFloat4(&moveVec, XMVector3Normalize(XMLoadFloat4(&moveVec)));
+	float deltaTime = GetDeltaTime();
+	
+	XMVECTOR v = XMVector3Normalize(XMLoadFloat4(&moveVec));
+	v = XMVectorScale(v, deltaTime * 10);
+	XMStoreFloat4(&moveVec, v);
 
 	int xDelta = 0;
 	int yDelta = 0;
@@ -397,7 +410,7 @@ void Render(void)
 
 
 	ID3D11Buffer* frameCBBuffer = base.GetCBFrameBuffer();
-	CBFrame cbFrame;
+	
 	
 	
 
@@ -405,11 +418,14 @@ void Render(void)
 	immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     immediateContext->IASetInputLayout(base.GetInputLayout());
+	CBFrame cbFrame;
+	cbFrame.View = MainCamera->GetViewMatrix();
 
+	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
     
     pSphere->Draw();
-    pMap->Draw();
+    //pMap->Draw();
     
     swapChain->Present(1, 0);
 }
@@ -420,3 +436,15 @@ void Shutdown(void)
     delete pSphere;
     delete pSPGen;
 }
+
+float GetDeltaTime(void)
+{
+	LARGE_INTEGER currentTime;
+	QueryPerformanceCounter(&currentTime);
+
+	float deltaTime = static_cast<float>(currentTime.QuadPart - PrevTime.QuadPart) / Frequency.QuadPart;
+	PrevTime = currentTime;
+
+	return deltaTime;
+}
+

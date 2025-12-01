@@ -64,7 +64,7 @@ void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 
 XMMATRIX Camera::GetViewMatrix(void) const
 {
-	return mViewTrans;
+	return XMMatrixTranspose(mViewTrans);
 }
 
 const XMFLOAT4& Camera::GetPosition() const

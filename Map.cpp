@@ -48,22 +48,22 @@ void Map::AddPerlinLayer(int x, int y, int scale)
 
 void Map::Draw(void)
 {
-	ID3D11Buffer* cbWorld	 = mBase->GetCBChangeEveryFrame();   // World
-	ID3D11Buffer* cbView	 = mBase->GetCBNeverChangeBuffer();    // View
-	ID3D11Buffer* cbProj	 = mBase->GetCBChangeOnResizeBuffer(); // Projection
+	ID3D11Buffer* cbWorld	 = mBase->GetCBObjectBuffer();   // World
+	ID3D11Buffer* cbView	 = mBase->GetCBFrameBuffer();    // View
+	ID3D11Buffer* cbProj	 = mBase->GetCBResizeBuffer(); // Projection
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
-	CBFrame cbFrame;
+	CBObject cbObj;
 
 	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
 
 
 	XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
-	cbFrame.World = scale * translate;
-	cbFrame.World = XMMatrixTranspose(cbFrame.World);
+	cbObj.World = scale * translate;
+	cbObj.World = XMMatrixTranspose(cbObj.World);
 
 
-	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbFrame, 0, 0);
+	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbObj, 0, 0);
 
 	ctx->VSSetShader(mBase->GetVertexShader(eShaderID::Basic), nullptr, 0);
 	ctx->PSSetShader(mBase->GetPixelShader(eShaderID::Basic), nullptr, 0);
