@@ -22,8 +22,6 @@ HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND g_hWnd;
-float DeltaTime;
-
 
 // TODO: Pope Coding standard
 D3D11Base base;
