@@ -9,6 +9,7 @@ Sphere::~Sphere()
 {
 	if (mVertexBuffer) mVertexBuffer->Release();
 	if (mIndexBuffer)  mIndexBuffer->Release();
+	
 }
 
 void Sphere::Draw(void)
