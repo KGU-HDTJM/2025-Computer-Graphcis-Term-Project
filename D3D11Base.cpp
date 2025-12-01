@@ -102,19 +102,6 @@ ID3D11DepthStencilView* D3D11Base::GetDepthStencilView(void) const {
 	return mDepthStencilView;
 }
 
-ID3D11Buffer* D3D11Base::GetCBChangeOnResizeBuffer(void) const {
-	return mCBChangeOnResize;
-}
-
-ID3D11Buffer* D3D11Base::GetCBNeverChangeBuffer(void) const {
-	return mCBNeverChanges;
-}
-
-ID3D11Buffer* D3D11Base::GetCBChangeEveryFrame(void) const
-{
-	return mCBChangesEveryFrame;
-}
-
 IDXGISwapChain* D3D11Base::GetSwapChain(void) const {
 	return mSwapChain;
 }
@@ -216,8 +203,28 @@ ID3D11PixelShader* D3D11Base::GetPixelShader(const eShaderID id) const
 	return (*mPixelShaders)[(int)id];
 }
 
-void D3D11Base::OnResize(UINT width, UINT height)
+ID3D11Buffer* D3D11Base::GetCBFrameBuffer(void) const
 {
+	return mCBFrameBuffer;
+}
+
+ID3D11Buffer* D3D11Base::GetCBResizeBuffer(void) const
+{
+	return mCBResizeBuffer;
+}
+
+ID3D11Buffer* D3D11Base::GetCBObjectBuffer(void) const
+{
+	return mCBObjectBuffer;
+}
+
+void D3D11Base::OnResize(HWND hWnd)
+{
+	RECT rect;
+	GetWindowRect(hWnd, &rect);
+	LONG width = rect.right - rect.left;
+	LONG height = rect.bottom - rect.top;
+
 	if (mDevice == nullptr || mSwapChain == nullptr)
 	{
 		return;
@@ -245,7 +252,7 @@ void D3D11Base::OnResize(UINT width, UINT height)
 	}
 
 	mCBResize.Projection = XMMatrixTranspose(projection);
-	mImmediateContext->UpdateSubresource(mCBChangeOnResize, 0, nullptr, &mCBResize, 0, 0);
+	mImmediateContext->UpdateSubresource(mCBResizeBuffer, 0, nullptr, &mCBResize, 0, 0);
 
 	return;
 
@@ -364,8 +371,8 @@ bool D3D11Base::createConstBuffers(UINT width, UINT height)
 	XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 	XMMATRIX view = XMMatrixLookAtLH(eye, at, up);
 
-	mConstantBuffer.View = XMMatrixTranspose(view);
-
+	CBFrame cbFrame;
+	cbFrame.View = XMMatrixTranspose(view);
 
 	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
 	mCBResize.Projection = XMMatrixTranspose(projection);
@@ -381,41 +388,41 @@ bool D3D11Base::createConstBuffers(UINT width, UINT height)
 	D3D11_SUBRESOURCE_DATA initData;
 	ZeroMemory(&initData, sizeof(initData));
 	
-	bufferDesc.ByteWidth = sizeof(mConstantBuffer);
-	initData.pSysMem = &mConstantBuffer;
+	bufferDesc.ByteWidth = sizeof(cbFrame);
+	initData.pSysMem = &cbFrame;
 
-	hr = mDevice->CreateBuffer(&bufferDesc, &initData, &mCBNeverChanges);
+	hr = mDevice->CreateBuffer(&bufferDesc, &initData, &mCBFrameBuffer);
 	if (FAILED(hr))
 	{
-		goto LB_FAILED_CREAET_NEVER_CHANGE_BUFFER;
+		goto LB_FAILED_CREATE_FRAME_CONSTANT_BUFFER;
 	}
 
 	bufferDesc.ByteWidth = sizeof(mCBResize);
 	initData.pSysMem = &mCBResize;
 
-	hr = mDevice->CreateBuffer(&bufferDesc, &initData, &mCBChangeOnResize);
+	hr = mDevice->CreateBuffer(&bufferDesc, &initData, &mCBResizeBuffer);
 	if (FAILED(hr))
 	{
 		goto LB_FAILED_CREATE_CHANGE_ON_RESIZE_BUFFER;
 	}
 
-	bufferDesc.ByteWidth = sizeof(CBFrame);
+	bufferDesc.ByteWidth = sizeof(CBObject);
 
-	hr = mDevice->CreateBuffer(&bufferDesc, nullptr, &mCBChangesEveryFrame);
+	hr = mDevice->CreateBuffer(&bufferDesc, nullptr, &mCBObjectBuffer);
 	if (FAILED(hr))
 	{
-		goto LB_FAILED_CREATE_CHANGE_EVERY_FRAME_BUFFER;
+		goto LB_FAILED_CREATE_OBJECT_CONSTANT_BUFFER;
 	}
 
-	mImmediateContext->UpdateSubresource(mCBChangeOnResize, 0, nullptr, &mCBResize, 0, 0);
-	mImmediateContext->UpdateSubresource(mCBNeverChanges, 0, nullptr, &mConstantBuffer, 0, 0);
+	mImmediateContext->UpdateSubresource(mCBResizeBuffer, 0, nullptr, &mCBResize, 0, 0);
+	mImmediateContext->UpdateSubresource(mCBFrameBuffer, 0, nullptr, &cbFrame, 0, 0);
 
 	return true;
-LB_FAILED_CREATE_CHANGE_EVERY_FRAME_BUFFER:
-	mCBChangeOnResize->Release();
+LB_FAILED_CREATE_OBJECT_CONSTANT_BUFFER:
+	mCBResizeBuffer->Release();
 LB_FAILED_CREATE_CHANGE_ON_RESIZE_BUFFER:
-	mCBNeverChanges->Release();
-LB_FAILED_CREAET_NEVER_CHANGE_BUFFER:
+	mCBFrameBuffer->Release();
+LB_FAILED_CREATE_FRAME_CONSTANT_BUFFER:
 	return false;
 }
 

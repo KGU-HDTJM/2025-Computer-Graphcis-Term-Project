@@ -1,16 +1,16 @@
 
 // 월드, 뷰, 프로젝션 매트릭스
-cbuffer WorldMatrixCB : register(b0)
+cbuffer cbPerObject : register(b0)
 {
     matrix World;
 };
 
-cbuffer ViewMatrixCB : register(b1)
+cbuffer cbPerFrame : register(b1)
 {
     matrix View;
 };
 
-cbuffer ProjectionMatrixCB : register(b2)
+cbuffer cbProjection : register(b2)
 {
     matrix Projection;
 };

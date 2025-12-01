@@ -34,13 +34,12 @@ public:
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
 		mCBResize.Projection = XMMatrixIdentity();
-		mConstantBuffer.View = XMMatrixIdentity();
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);
 	bool AddVertexShader(const LPWSTR filePath);
 	bool AddPixelShader(const LPWSTR filePath);
-	void OnResize(UINT widht, UINT height);
+	void OnResize(HWND hWnd);
 	void Cleanup(void);
 	
 	ID3D11Device* GetDevice(void) const;
@@ -49,9 +48,9 @@ public:
 	ID3D11DepthStencilView* GetDepthStencilView(void) const;
 	ID3D11VertexShader* GetVertexShader(const eShaderID id) const;
 	ID3D11PixelShader* GetPixelShader(const eShaderID id) const;
-	ID3D11Buffer* GetCBNeverChangeBuffer(void) const;
-	ID3D11Buffer* GetCBChangeOnResizeBuffer(void) const;
-	ID3D11Buffer* GetCBChangeEveryFrame(void) const;
+	ID3D11Buffer* GetCBFrameBuffer(void) const;
+	ID3D11Buffer* GetCBResizeBuffer(void) const;
+	ID3D11Buffer* GetCBObjectBuffer(void) const;
 	IDXGISwapChain* GetSwapChain(void) const;
 	ID3D11RasterizerState* GetRasterState(void) const;
 	ID3DBlob* CompileShader(const LPWSTR filePath, /*const LPCSTR entryPoint,*/ const LPCSTR target) const;
@@ -83,11 +82,10 @@ private:
 	vector<ID3D11VertexShader*>* mVertexShaders = nullptr;
 	vector<ID3D11PixelShader*>* mPixelShaders = nullptr;
 
-	ID3D11Buffer* mCBNeverChanges = nullptr;
-	ID3D11Buffer* mCBChangeOnResize = nullptr;
-	ID3D11Buffer* mCBChangesEveryFrame = nullptr;
+	ID3D11Buffer* mCBResizeBuffer = nullptr;
+	ID3D11Buffer* mCBFrameBuffer = nullptr;
+	ID3D11Buffer* mCBObjectBuffer = nullptr;
 
-	ConstantBuffer mConstantBuffer;
 	CBResize mCBResize;
 	
 };

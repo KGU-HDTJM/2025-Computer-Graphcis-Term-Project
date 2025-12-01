@@ -67,7 +67,7 @@ SphereGenerator::~SphereGenerator()
 Sphere* SphereGenerator::CreateSphere(float radius, const XMFLOAT4& pos) const
 {
 	UINT vertexCount;
-	ID3D11Buffer* vertexBuffer = createVertexBuffer(radius, vertexCount);
+	ID3D11Buffer* vertexBuffer = createVertexBuffer(vertexCount);
 	UINT indexCount;
 	ID3D11Buffer* indexBuffer = createIndexBuffer(indexCount);
 	
@@ -104,16 +104,16 @@ ID3D11Buffer* SphereGenerator::GetTessellationBuffer() const
 	return mTessellationBuffer;
 }
 
-ID3D11Buffer* SphereGenerator::createVertexBuffer(float radius, UINT& count) const
+ID3D11Buffer* SphereGenerator::createVertexBuffer(UINT& count) const
 {
 	count = 8;
 	Vertex* vertices = new Vertex[count];
 	for (size_t i = 0; i < count; i++)
 	{
 		vertices[i] = cubeVertices[i];
-		vertices[i].Position.x = vertices[i].Position.x * radius;
-		vertices[i].Position.y = vertices[i].Position.y * radius;
-		vertices[i].Position.z = vertices[i].Position.z * radius;
+		vertices[i].Position.x = vertices[i].Position.x;
+		vertices[i].Position.y = vertices[i].Position.y;
+		vertices[i].Position.z = vertices[i].Position.z;
 	}
 	ID3D11Buffer* vertexBuffer = nullptr;
 
@@ -164,7 +164,6 @@ void SphereGenerator::initConstantBuffer()
 {
 	mTessellationBuffer = nullptr;
 
-
 	D3D11_BUFFER_DESC cbd = {};
 	cbd.Usage = D3D11_USAGE_DEFAULT;
 	cbd.ByteWidth = sizeof(TessellationCB);
@@ -175,7 +174,7 @@ void SphereGenerator::initConstantBuffer()
 	assert(SUCCEEDED(hr));
 
 	TessellationCB tessData;
-	tessData.TessFactor = 8.0f; // 원하는 테셀레이션 팩터
+	tessData.TessFactor = 8.0f;
 	tessData.Padding = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
 	ID3D11DeviceContext* context = mBase->GetImmediateContext();
 	context->UpdateSubresource(mTessellationBuffer, 0, nullptr, &tessData, 0, 0);

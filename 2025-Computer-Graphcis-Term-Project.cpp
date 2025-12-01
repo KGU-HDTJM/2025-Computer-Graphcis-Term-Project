@@ -4,6 +4,8 @@
 #include "framework.h"
 #include "2025-Computer-Graphcis-Term-Project.h"
 
+#include <windowsx.h>
+
 #include <d3d11.h>
 #include <DirectXMath.h>
 
@@ -11,6 +13,7 @@
 #include"Perlin.h"
 #include "Sphere.h"
 #include "SphereGenerator.h"
+#include "Camera.h"
 
 #define MAX_LOADSTRING 100
 
@@ -20,10 +23,34 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND g_hWnd;
 
+// TODO: Pope Coding standard
 D3D11Base base;
-Perlin* perlin; 
+Perlin* perlin;
 SphereGenerator* pSPGen;
 Sphere* pSphere;
+Camera* MainCamera;
+// moving
+struct MoveFactor {
+	float Forward;
+	float Left;
+	float Backward;
+	float Right;
+	float Up;
+	float Down;
+} MovingFactor;
+
+bool bFixMousePos;
+
+struct Position {
+	int X;
+	int Y;
+} MousePos;
+
+struct RectInfo {
+	Position Pos;
+	UINT Width;
+	UINT Height;
+} WinInfo;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -38,47 +65,47 @@ void Shutdown(void);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-                     _In_opt_ HINSTANCE hPrevInstance,
-                     _In_ LPWSTR    lpCmdLine,
-                     _In_ int       nCmdShow)
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
 {
-    UNREFERENCED_PARAMETER(hPrevInstance);
-    UNREFERENCED_PARAMETER(lpCmdLine);
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: Place code here.
+	// TODO: Place code here.
 
-    // Initialize global strings
-    LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_MY2025COMPUTERGRAPHCISTERMPROJECT, szWindowClass, MAX_LOADSTRING);
-    MyRegisterClass(hInstance);
+	// Initialize global strings
+	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDC_MY2025COMPUTERGRAPHCISTERMPROJECT, szWindowClass, MAX_LOADSTRING);
+	MyRegisterClass(hInstance);
 
-    // Perform application initialization:
-    if (!InitInstance (hInstance, nCmdShow))
-    {
-        return FALSE;
-    }
+	// Perform application initialization:
+	if (!InitInstance(hInstance, nCmdShow))
+	{
+		return FALSE;
+	}
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY2025COMPUTERGRAPHCISTERMPROJECT));
+	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY2025COMPUTERGRAPHCISTERMPROJECT));
 
-    MSG msg = { 0 };
+	MSG msg = { 0 };
 
-    if (!Init()) {
-        return FALSE;
-    }
-    // Main message loop:
-    while (WM_QUIT != msg.message)
-    {
-        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-        Update();
-        Render();
-        
-    }
-    Shutdown();
-    return (int) msg.wParam;
+	if (!Init()) {
+		return FALSE;
+	}
+	// Main message loop:
+	while (WM_QUIT != msg.message)
+	{
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		Update();
+		Render();
+
+	}
+	Shutdown();
+	return (int)msg.wParam;
 }
 
 
@@ -90,23 +117,23 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
-    WNDCLASSEXW wcex;
+	WNDCLASSEXW wcex;
 
-    wcex.cbSize = sizeof(WNDCLASSEX);
+	wcex.cbSize = sizeof(WNDCLASSEX);
 
-    wcex.style          = CS_HREDRAW | CS_VREDRAW;
-    wcex.lpfnWndProc    = WndProc;
-    wcex.cbClsExtra     = 0;
-    wcex.cbWndExtra     = 0;
-    wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY2025COMPUTERGRAPHCISTERMPROJECT));
-    wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_MY2025COMPUTERGRAPHCISTERMPROJECT);
-    wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.lpfnWndProc = WndProc;
+	wcex.cbClsExtra = 0;
+	wcex.cbWndExtra = 0;
+	wcex.hInstance = hInstance;
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY2025COMPUTERGRAPHCISTERMPROJECT));
+	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
+	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY2025COMPUTERGRAPHCISTERMPROJECT);
+	wcex.lpszClassName = szWindowClass;
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
-    return RegisterClassExW(&wcex);
+	return RegisterClassExW(&wcex);
 }
 
 //
@@ -121,20 +148,20 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
-   hInst = hInstance; // Store instance handle in our global variable
+	hInst = hInstance; // Store instance handle in our global variable
 
-   g_hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+	g_hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
-   if (!g_hWnd)
-   {
-      return FALSE;
-   }
+	if (!g_hWnd)
+	{
+		return FALSE;
+	}
 
-   ShowWindow(g_hWnd, nCmdShow);
-   UpdateWindow(g_hWnd);
+	ShowWindow(g_hWnd, nCmdShow);
+	UpdateWindow(g_hWnd);
 
-   return TRUE;
+	return TRUE;
 }
 
 //
@@ -149,152 +176,291 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    switch (message)
-    {
-    case WM_COMMAND:
-        {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
-        }
-        break;
-    case WM_PAINT:
-        {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
-            // TODO: Add any drawing code that uses hdc here...
-            EndPaint(hWnd, &ps);
-        }
-        break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
-    }
-    return 0;
+	switch (message)
+	{
+	case WM_KEYDOWN:
+	{
+		switch (wParam)
+		{
+		case 'W':
+		case 'w':
+		{
+			MovingFactor.Forward = 1.0F;
+		}
+		break;
+		case 'A':
+		case 'a':
+		{
+			MovingFactor.Left = 1.0F;
+		}
+		break;
+		case 'S':
+		case 's':
+		{
+			MovingFactor.Backward = 1.0F;
+		}
+		break;
+		case 'D':
+		case 'd':
+		{
+			MovingFactor.Right = 1.0F;
+		}
+		break;
+		case VK_SPACE:
+		{
+			MovingFactor.Up = 1.0F;
+		}
+		break;
+		case VK_SHIFT:
+		{
+			MovingFactor.Down = 1.0F;
+		}
+		break;
+		case VK_ESCAPE:
+		{
+			bFixMousePos = !bFixMousePos;
+			ShowCursor(bFixMousePos);
+		}
+		break;
+		default:
+			break;
+		}
+	}
+	break;
+	case WM_KEYUP:
+	{
+		switch (wParam)
+		{
+		case 'W':
+		case 'w':
+		{
+			MovingFactor.Forward = 0.0F;
+		}
+		break;
+		case 'A':
+		case 'a':
+		{
+			MovingFactor.Left = 0.0F;
+		}
+		break;
+		case 'S':
+		case 's':
+		{
+			MovingFactor.Backward = 0.0F;
+		}
+		break;
+		case 'D':
+		case 'd':
+		{
+			MovingFactor.Right = 0.0F;
+		}
+		break;
+		case VK_SPACE:
+		{
+			MovingFactor.Up = 0.0F;
+		}
+		break;
+		case VK_SHIFT:
+		{
+			MovingFactor.Down = 0.0F;
+		}
+		break;
+		default:
+			break;
+		}
+		break;
+	}
+	break;
+	case WM_MOUSEMOVE:
+	{
+		MousePos.X = GET_X_LPARAM(lParam);
+		MousePos.Y = GET_Y_LPARAM(lParam);
+	}
+	break;
+	case WM_COMMAND:
+	{
+		int wmId = LOWORD(wParam);
+		// Parse the menu selections:
+		switch (wmId)
+		{
+		case IDM_ABOUT:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_EXIT:
+			DestroyWindow(hWnd);
+			break;
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
+	break;
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+		// TODO: Add any drawing code that uses hdc here...
+		EndPaint(hWnd, &ps);
+	}
+	break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
 }
 
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
 
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
+	return (INT_PTR)FALSE;
 }
 
 bool Init(void)
 {
-    if (!base.Initialize(g_hWnd)) {
-        return false;
-    }
-    perlin = new Perlin(base.GetDevice(), base.GetImmediateContext(), 10, 10, 4);
+	bFixMousePos = false;
+	if (!base.Initialize(g_hWnd)) {
+		return false;
+	}
+	perlin = new Perlin(base.GetDevice(), base.GetImmediateContext(), 10, 10, 4);
 
-    pSPGen = new SphereGenerator(&base);
+	pSPGen = new SphereGenerator(&base);
 
-    pSphere = pSPGen->CreateSphere(1.5, XMFLOAT4(0.F, 0.F, 0.F, 1.F));
-    
-    return true;
+	pSphere = pSPGen->CreateSphere(1.5F, XMFLOAT4(0.F, 0.F, 0.F, 1.F));
+	MainCamera = new Camera(
+		XMFLOAT4(0.F, 20.F, -40.F, 1.0F), 
+		XMFLOAT4(0.F, 0.F, 0.F, 0.F), 
+		XMFLOAT4(0.F, 1.F, 0.F, 0.F));
+
+	RECT rect;
+	GetWindowRect(g_hWnd, &rect);
+	WinInfo.Width = rect.right - rect.left;
+	WinInfo.Height = rect.bottom - rect.top;
+	WinInfo.Pos.X = rect.left;
+	WinInfo.Pos.Y = rect.top;
+
+	MovingFactor.Down = 0;
+	MovingFactor.Backward = 0;
+	MovingFactor.Forward = 0;
+	MovingFactor.Left = 0;
+	MovingFactor.Right = 0;
+	MovingFactor.Up = 0;
+	return true;
 }
 
 void Update(void)
 {
+	XMFLOAT4 moveVec;
+	moveVec.x = MovingFactor.Right - MovingFactor.Left; 
+	moveVec.y = MovingFactor.Up - MovingFactor.Down;
+	moveVec.z = MovingFactor.Forward - MovingFactor.Backward;
+	moveVec.w = 0;
+	XMStoreFloat4(&moveVec, XMVector3Normalize(XMLoadFloat4(&moveVec)));
+	
+	int xDelta = 0;
+	int yDelta = 0;
+
+	Position screenCenter = { (WinInfo.Pos.X + WinInfo.Width / 2), (WinInfo.Pos.Y + WinInfo.Height / 2) };
+	if (bFixMousePos) 
+	{
+		SetCursorPos(screenCenter.X, screenCenter.Y);
+		
+		xDelta = MousePos.X - screenCenter.X;
+		yDelta = MousePos.Y - screenCenter.Y;
+	}
+	MainCamera->Update(moveVec, xDelta, -yDelta);
 }
 
 
 void RenderPerlin()
 {
-    
-    ID3D11Buffer* cbWorld = base.GetCBChangeEveryFrame();   // World
-    ID3D11Buffer* cbView = base.GetCBNeverChangeBuffer();    // View
-    ID3D11Buffer* cbProj = base.GetCBChangeOnResizeBuffer(); // Projection
-    ID3D11DeviceContext* ctx = base.GetImmediateContext();
 
-    
-    CBFrame cbFrame;
+	ID3D11Buffer* cbWorld = base.GetCBObjectBuffer();   // World
+	ID3D11Buffer* cbView = base.GetCBFrameBuffer();    // View
+	ID3D11Buffer* cbProj = base.GetCBResizeBuffer(); // Projection
+	ID3D11DeviceContext* ctx = base.GetImmediateContext();
 
-    XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
 
-    
-    XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
-    cbFrame.World = scale * translate;
-    cbFrame.World = XMMatrixTranspose(cbFrame.World);
-    
-    
-    ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbFrame, 0, 0);
+	CBObject cbObject;
 
-    // 셰이더 설정
-    ctx->VSSetShader(base.GetVertexShader(eShaderID::Basic), nullptr, 0);
-    ctx->PSSetShader(base.GetPixelShader(eShaderID::Basic), nullptr, 0);
+	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
 
-    ctx->VSSetConstantBuffers(0, 1, &cbWorld); // b0 = World
-    ctx->VSSetConstantBuffers(1, 1, &cbView);  // b1 = View
-    ctx->VSSetConstantBuffers(2, 1, &cbProj);  // b2 = Projection
-    ctx->HSSetShader(nullptr, nullptr, 0);
-    ctx->DSSetShader(nullptr, nullptr, 0);
-    ctx->PSSetConstantBuffers(0, 1, &cbWorld); // Pixel Shader도 World 필요 시
 
-    // IA 설정
-    UINT stride = perlin->GetVertexSize();
-    UINT offset = 0;
-    ID3D11Buffer* vertex = perlin->GetVertexBuffer();
-    ctx->IASetInputLayout(base.GetInputLayout());
-    ctx->IASetVertexBuffers(0, 1, &vertex, &stride, &offset);
-    ctx->IASetIndexBuffer(perlin->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
-    ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
+	cbObject.World = scale * translate;
+	cbObject.World = XMMatrixTranspose(cbObject.World);
 
-    // Draw
-    ctx->DrawIndexed(static_cast<UINT>(perlin->GetIndexCount()), 0, 0);
+
+	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbObject, 0, 0);
+
+	// 셰이더 설정
+	ctx->VSSetShader(base.GetVertexShader(eShaderID::Basic), nullptr, 0);
+	ctx->PSSetShader(base.GetPixelShader(eShaderID::Basic), nullptr, 0);
+
+	ctx->VSSetConstantBuffers(0, 1, &cbWorld); // b0 = World
+	ctx->VSSetConstantBuffers(1, 1, &cbView);  // b1 = View
+	ctx->VSSetConstantBuffers(2, 1, &cbProj);  // b2 = Projection
+	ctx->PSSetConstantBuffers(0, 1, &cbWorld); // Pixel Shader도 World 필요 시
+
+	// IA 설정
+	UINT stride = perlin->GetVertexSize();
+	UINT offset = 0;
+	ID3D11Buffer* vertex = perlin->GetVertexBuffer();
+	ctx->IASetInputLayout(base.GetInputLayout());
+	ctx->IASetVertexBuffers(0, 1, &vertex, &stride, &offset);
+	ctx->IASetIndexBuffer(perlin->GetIndexBuffer(), DXGI_FORMAT_R32_UINT, 0);
+	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Draw
+	ctx->DrawIndexed(static_cast<UINT>(perlin->GetIndexCount()), 0, 0);
 }
 
-
-void Render(void) 
+void Render(void)
 {
-    const float BG_COLOR[] = { 0.0f, 0.125f, 0.3f, 1.0f };
+	const static float BG_COLOR[] = { 0.0f, 0.125f, 0.3f, 1.0f };
 
-    ID3D11Device* device = base.GetDevice();
-    ID3D11DeviceContext* immediateContext = base.GetImmediateContext();
-    IDXGISwapChain* swapChain = base.GetSwapChain();
-
-
-    immediateContext->ClearRenderTargetView(base.GetRenderTargetView(), BG_COLOR);
-    immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-    immediateContext->IASetInputLayout(base.GetInputLayout());
+	ID3D11Device* device = base.GetDevice();
+	ID3D11DeviceContext* immediateContext = base.GetImmediateContext();
+	IDXGISwapChain* swapChain = base.GetSwapChain();
 
 
+	ID3D11Buffer* frameCBBuffer = base.GetCBFrameBuffer();
+	CBFrame cbFrame;
+	
+	
 
-    pSphere->Draw();
-    RenderPerlin();
-    
-    swapChain->Present(1, 0);
+	immediateContext->ClearRenderTargetView(base.GetRenderTargetView(), BG_COLOR);
+	immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+	immediateContext->IASetInputLayout(base.GetInputLayout());
+	cbFrame.View = MainCamera->GetViewMatrix();
+	cbFrame.View = XMMatrixTranspose(MainCamera->GetViewMatrix());
+	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
+
+	pSphere->Draw();
+	RenderPerlin();
+
+	swapChain->Present(1, 0);
 }
 
 void Shutdown(void)
 {
-    delete perlin;
-    delete pSphere;
-    delete pSPGen;
+	delete perlin;
+	delete pSphere;
+	delete pSPGen;
 }

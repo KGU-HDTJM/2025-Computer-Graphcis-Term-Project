@@ -291,6 +291,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="2025-Computer-Graphcis-Term-Project.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="D3D11Base.h" />
     <ClInclude Include="define.h" />
     <ClInclude Include="framework.h" />
@@ -302,6 +303,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="2025-Computer-Graphcis-Term-Project.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="D3D11Base.cpp" />
     <ClCompile Include="Perlin.cpp" />
     <ClCompile Include="Sphere.cpp" />

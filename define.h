@@ -10,7 +10,7 @@ struct Vertex
 	XMFLOAT2 TexCoord;
 };
 
-struct ConstantBuffer
+struct CBFrame
 {
 	XMMATRIX View;
 };
@@ -20,7 +20,7 @@ struct CBResize
 	XMMATRIX Projection;
 };
 
-struct CBFrame {
+struct CBObject {
 	XMMATRIX World;
 };
 

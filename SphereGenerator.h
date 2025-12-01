@@ -18,7 +18,7 @@ public:
 	ID3D11Buffer* GetTessellationBuffer() const;
 
 private:
-	ID3D11Buffer* createVertexBuffer(float radius, UINT& count) const;
+	ID3D11Buffer* createVertexBuffer(UINT& count) const;
 	ID3D11Buffer* createIndexBuffer(UINT& count) const;
 	void initConstantBuffer();
 	
