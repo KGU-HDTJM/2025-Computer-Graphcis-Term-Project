@@ -345,7 +345,7 @@ bool Init(void)
     if (!Base->Initialize(g_hWnd)) {
         return false;
     }
-    // pMap = new Map(Base);
+    pMap = new Map(Base);
 
 	pSPGen = new SphereGenerator(Base);
 
@@ -430,7 +430,7 @@ void Render(void)
 	cbFrame.LightCL = XMFLOAT4(1.0F, 1.0F, 1.0F, 1.0F); // change lumen and colors
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
-	// pMap->UpdateCameraPos(MainCamera->GetPosition());
+	pMap->UpdateCameraPos(MainCamera->GetPosition());
 
 
 	ID3D11ShaderResourceView* srv = ColorTexture->GetHSVShaderRV();
@@ -438,7 +438,7 @@ void Render(void)
 	ID3D11SamplerState* samplerLinear = ColorTexture->GetSamplerLinear();
 	immediateContext->PSSetSamplers(0, 1, &samplerLinear);
     pSphere->Draw();
-    // pMap->Draw();
+    pMap->Draw();
     
     swapChain->Present(0, 0);
 }

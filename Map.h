@@ -4,9 +4,18 @@
 #include<DirectXMath.h>
 #include<EASTL/vector.h>
 #include<ctime>
+#include<string>
 
 #include "define.h"
 #include "D3D11Base.h"
+
+enum class eTerrain
+{
+	FLAT,
+	BUMPY,
+	JAGGED,
+	COUNT
+};
 
 class Map
 {
@@ -19,9 +28,7 @@ public:
 		mCamPos = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
 	}
 	Map(D3D11Base* _base) : mBase(_base)
-	{
-		srand(static_cast<uint32_t>(std::time(nullptr)));
-		
+	{		
 		if (!loadMeshData())
 		{
 			MessageBoxA(nullptr, "Failed to load index and vertex", "Error", MB_OK);
@@ -40,7 +47,6 @@ public:
 		if (mIndexBuffer) { mIndexBuffer->Release();   }
 	}
 
-	void AddPerlinLayer(int x, int y, int scale);
 	void Draw(void);
 
 	size_t GetIndexCount(void);
@@ -53,17 +59,17 @@ private:
 	
 	bool loadMeshData(void);
 
-	eastl::vector<Vertex> createVertex(const int& x, const int& y, const int& scale);
-	void createIndex(const int& x, const int& y, const int& scale);
+	eastl::vector<Vertex> createVertex(const int& x, const int& z, const int& scale);
 
+	void createIndex(const int& x, const int& z);
 	bool createBuffers(void);
+	
 	void updateVertexBuffer(const eastl::vector<Vertex>& newPerlin);
 	void updateIndexBuffer(void);
 
 private:
-
-	const char* VERTEX_FILE = "perlin.vx.bin";
-	const char* INDEX_FILE  = "perlin.ix.bin";
+	
+	const char* MAIN_SEED_FILE = "perlin.seed.bin";
 	
 	XMFLOAT4 mCamPos;
 
