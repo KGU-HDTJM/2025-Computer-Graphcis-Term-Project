@@ -443,7 +443,7 @@ void Render(void)
 
 void Shutdown(void)
 {
-    // delete pMap;
+    delete pMap;
 	delete GameTimer;
 	delete ColorTexture;
     delete pSphere;
