@@ -54,6 +54,9 @@
     <ClInclude Include="ColorTextureMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="InstancedSphereSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="2025-Computer-Graphcis-Term-Project.cpp">
@@ -78,6 +81,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ColorTextureMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InstancedSphereSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,5 +1,3 @@
-
-// 월드, 뷰, 프로젝션 매트릭스
 cbuffer cbPerObject : register(b0)
 {
     matrix World;
@@ -8,6 +6,8 @@ cbuffer cbPerObject : register(b0)
 cbuffer cbPerFrame : register(b1)
 {
     matrix View;
+    float4 LightPos;
+    float4 LightCL;
 };
 
 cbuffer cbProjection : register(b2)
@@ -27,6 +27,7 @@ struct DS_OUTPUT
     float4 Position : SV_POSITION;
     float4 Normal : TEXCOORD0;
     float2 TexCoord : TEXCOORD1;
+    float3 WorldPos : TEXCOORD2;
 };
 
 struct HS_CONSTANT_DATA_OUTPUT

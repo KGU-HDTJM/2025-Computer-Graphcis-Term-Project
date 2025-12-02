@@ -29,6 +29,6 @@ DS_OUTPUT main(HS_CONSTANT_DATA_OUTPUT input, const OutputPatch<DS_CONTROL_POINT
     output.Position = projPos;
     output.Normal = normalize(mul(float4(normal, 0.0f), World)); // Normal 변환
     output.TexCoord = tex;
-
+    output.WorldPos = output.Position.xyz;
     return output;
 }
