@@ -426,6 +426,8 @@ void Render(void)
     immediateContext->IASetInputLayout(Base->GetInputLayout());
 	CBFrame cbFrame;
 	cbFrame.View = XMMatrixTranspose(MainCamera->GetViewMatrix());
+	cbFrame.LightPos = MainCamera->GetPosition();
+	cbFrame.LightCL = XMFLOAT4(1.0F, 1.0F, 1.0F, 1.0F); // change lumen and colors
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
 	pMap->UpdateCameraPos(MainCamera->GetPosition());

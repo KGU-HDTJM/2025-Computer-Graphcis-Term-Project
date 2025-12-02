@@ -18,6 +18,6 @@ VS_OUTPUT main(VS_INPUT input)
     output.Position = mul(output.Position, Projection);
     output.Normal = normalize(mul(input.Normal.xyz, (float3x3)World));
     output.TexCoord = input.TexCoord;
-
+    output.WolrdPos = output.Position.xyz;
     return output;
 }

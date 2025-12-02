@@ -13,6 +13,8 @@ struct Vertex
 struct CBFrame
 {
 	XMMATRIX View;
+	XMFLOAT4 LightPos;
+	XMFLOAT4 LightCL; // Light Color(xyz) and Lumen(w);
 };
 
 struct CBResize

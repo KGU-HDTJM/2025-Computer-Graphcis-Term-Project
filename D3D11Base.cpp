@@ -393,6 +393,8 @@ bool D3D11Base::createConstBuffers(UINT width, UINT height)
 
 	CBFrame cbFrame;
 	cbFrame.View = XMMatrixTranspose(view);
+	cbFrame.LightCL = XMFLOAT4(0.F, 0.F, 0.F, 0.F);
+	cbFrame.LightPos = XMFLOAT4(0.F, 0.F, 0.F, 0.F);
 
 	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
 	mCBResize.Projection = XMMatrixTranspose(projection);
