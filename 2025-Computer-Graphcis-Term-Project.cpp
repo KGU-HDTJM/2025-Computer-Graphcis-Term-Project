@@ -15,6 +15,7 @@
 #include "Sphere.h"
 #include "SphereGenerator.h"
 #include "Camera.h"
+#include "Map.h"
 #include <cstdlib>
 
 #define MAX_LOADSTRING 100
@@ -27,7 +28,7 @@ HWND g_hWnd;
 
 // TODO: Pope Coding standard
 D3D11Base base;
-// Map* pMap; 
+Map* pMap; 
 SphereGenerator* pSPGen;
 Sphere* pSphere;
 Camera* MainCamera;
@@ -346,7 +347,7 @@ bool Init(void)
     if (!base.Initialize(g_hWnd)) {
         return false;
     }
-    // pMap = new Map(&base);
+    pMap = new Map(&base);
 
 	pSPGen = new SphereGenerator(&base);
 
@@ -436,17 +437,17 @@ void Render(void)
 	cbFrame.View = XMMatrixTranspose(MainCamera->GetViewMatrix());
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
-	//pMap->UpdateCameraPos(MainCamera->GetPosition());
+	pMap->UpdateCameraPos(MainCamera->GetPosition());
 
     pSphere->Draw();
-    // pMap->Draw();
+    pMap->Draw();
     
     swapChain->Present(1, 0);
 }
 
 void Shutdown(void)
 {
-    // delete pMap;
+    delete pMap;
     delete pSphere;
     delete pSPGen;
 	base.Cleanup();

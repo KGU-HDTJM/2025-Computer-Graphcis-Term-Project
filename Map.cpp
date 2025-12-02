@@ -65,7 +65,7 @@ void Map::Draw(void)
 	CBObject cbObj;
 
 	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
-	XMMATRIX translate = XMMatrixTranslation(-40.0f, -10.0f, -40.0f);
+	XMMATRIX translate = XMMatrixTranslation(-200.0f, -10.0f, -200.0f);
 
 	cbObj.World = scale * translate;
 	cbObj.World = XMMatrixTranspose(cbObj.World);
@@ -301,8 +301,11 @@ void Map::updateIndexBuffer(void)
 	
 	const int INDEX_PER_TRIANGLE = 6;
 
-	int camX = (mCamPos.x + HALF_MAP_SIZE) / EXTEND_SIZE;
-	int camZ = (mCamPos.z + HALF_MAP_SIZE) / EXTEND_SIZE;
+	float camfX = (mCamPos.x + HALF_MAP_SIZE) / static_cast<float>(EXTEND_SIZE);
+	float camfZ = (mCamPos.z + HALF_MAP_SIZE) / static_cast<float>(EXTEND_SIZE);
+
+	int camX = static_cast<int>(camfX);
+	int camZ = static_cast<int>(camfZ);
 
 	if (camX < -HALF_MAP_SIZE || camX > HALF_MAP_SIZE ||
 		camZ < -HALF_MAP_SIZE || camZ > HALF_MAP_SIZE)
