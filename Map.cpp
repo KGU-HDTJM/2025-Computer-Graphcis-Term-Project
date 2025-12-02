@@ -7,6 +7,13 @@
 using namespace eastl;
 using namespace DirectX;
 
+
+#define ADD_PERLIN_LAYER(x, z, scale) \
+    do { \
+        auto newPerlin = Map::createVertex((x), (z), (scale)); \
+        Map::updateVertexBuffer(newPerlin); \
+    } while(0
+
 const float PI = acosf(-1);
 
 inline float lerp(float v0, float v1, float t)
@@ -46,11 +53,7 @@ void Map::UpdateCameraPos(const XMFLOAT4& pos)
 	mCamPos = pos;
 }
 
-void Map::AddPerlinLayer(int x, int y, int scale)
-{
-	vector<Vertex> newPerlin = createVertex(x, y, scale);
-	updateVertexBuffer(newPerlin);
-}
+
 
 void Map::Draw(void)
 {
@@ -96,34 +99,42 @@ void Map::Draw(void)
 
 bool Map::loadMeshData(void)
 {
-	std::ifstream fin(VERTEX_FILE, std::ios::binary);
+	uint32_t mainSeed = static_cast<uint32_t>(std::time(nullptr));
+
+	/*std::ofstream fout(MAIN_SEED_FILE, std::ios::binary);
+	if (!fout.is_open())
+	{
+		MessageBoxA(nullptr, "Cannot wirte seed", "Error", MB_OK);
+		assert(false);
+	}
+	fout.write(reinterpret_cast<char*>(&mainSeed), sizeof(mainSeed));
+	fout.close();*/
+	
+	std::ifstream fin(MAIN_SEED_FILE, std::ios::binary);
 	if (!fin.is_open())
 	{
-		return false;
+		MessageBoxA(nullptr, "Cannot read seed", "Error", MB_OK);
+		assert(false);
 	}
-	fin.seekg(0, std::ios::end);
-	std::streamsize size = fin.tellg();
-	fin.seekg(0, std::ios::beg);
-	size_t vecSize = size / sizeof(Vertex);
-
-	vector<Vertex> vertices(vecSize);
-
-	fin.read(reinterpret_cast<char*>(vertices.data()), vecSize * sizeof(Vertex));
+	fin.read(reinterpret_cast<char*>(&mainSeed), sizeof(uint32_t));
 	fin.close();
 
-	mVertices = vertices;
+	srand(mainSeed);
+
+	mVertices = createVertex(200, 200, 1);
 
 	return true;
 }
 
 
-vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
+vector<Vertex> Map::createVertex(const int& x, const int& z, const int& scale)
 {
+
 	vector<float> randDir;
 	vector<Vertex> vertices;
 
-	const int COARSE_W = x * 2 * scale;
-	const int COARSE_H = y * 2 * scale;
+	const int COARSE_W = x * 2;
+	const int COARSE_H = z * 2;
 	randDir.reserve(COARSE_W * COARSE_H);
 
 	for (int i = 0; i < COARSE_W * COARSE_H; ++i)
@@ -132,8 +143,8 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 		randDir.push_back(angle);
 	}
 
-	const int GRID_WIDTH = x * scale;
-	const int GRID_HEIGHT = y * scale;
+	const int GRID_WIDTH  = x;
+	const int GRID_HEIGHT = z;
 
 	// store heights first
 	eastl::vector<float> heights;
@@ -169,7 +180,7 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 			float n1 = lerp(p10, p11, v);
 			float result = lerp(n0, n1, u);
 
-			float adjustHeight = (result + 1.0f) * 0.5f * 10.0f + 1.0f;
+			float adjustHeight = (result + 1.0f) * 0.5f * (10.0f * scale) + 1.0f;
 
 			heights[i + GRID_WIDTH * j] = adjustHeight;
 		}
@@ -200,7 +211,6 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 			else
 				gz = (heights[i + GRID_WIDTH * (j + 1)] - heights[i + GRID_WIDTH * (j - 1)]) * 0.5f;
 
-			// normal approximation: (-gx, 1.0, -gz) then normalize. Use a scale factor on the y to control steepness
 			XMVECTOR n = XMVectorSet(-gx, 2.0f, -gz, 0.0f);
 			n = XMVector3Normalize(n);
 			XMFLOAT3 nf;
@@ -214,11 +224,11 @@ vector<Vertex> Map::createVertex(const int& x, const int& y, const int& scale)
 	return vertices;
 }
 
-void Map::createIndex(const int& x, const int& y, const int& scale)
+void Map::createIndex(const int& x, const int& y)
 {
 
-	const int GRID_WIDTH = x * scale;
-	const int GRID_HEIGHT = y * scale;
+	const int GRID_WIDTH  = x;
+	const int GRID_HEIGHT = y;
 
 	for (int j = 0; j < GRID_HEIGHT - 1; ++j)
 	{
@@ -268,6 +278,8 @@ bool Map::createBuffers(void)
 		goto LB_FAILED_CREATE_VERTEX_BUFFER;
 	} 
 
+	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	bufferDesc.ByteWidth = (UINT)(sizeof(uint32_t) * MAX_INDEX_BUFFER_SIZE);
 	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 
@@ -341,9 +353,10 @@ void Map::updateIndexBuffer(void)
 
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
-	D3D11_SUBRESOURCE_DATA initData;
-	initData.pSysMem = mIndices.data();
-	ctx->UpdateSubresource(mIndexBuffer, 0, nullptr, mIndices.data(), 0, 0);
+	D3D11_MAPPED_SUBRESOURCE initData;
+	ctx->Map(mIndexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &initData);
+	memcpy(initData.pData, mIndices.data(), sizeof(uint32_t) * mIndices.size());
+	ctx->Unmap(mIndexBuffer, 0);
 }
 
 
