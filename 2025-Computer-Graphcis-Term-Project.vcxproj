@@ -292,6 +292,7 @@
   <ItemGroup>
     <ClInclude Include="2025-Computer-Graphcis-Term-Project.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ColorTextureMap.h" />
     <ClInclude Include="D3D11Base.h" />
     <ClInclude Include="define.h" />
     <ClInclude Include="framework.h" />
@@ -300,14 +301,17 @@
     <ClInclude Include="Sphere.h" />
     <ClInclude Include="SphereGenerator.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="Timer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="2025-Computer-Graphcis-Term-Project.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ColorTextureMap.cpp" />
     <ClCompile Include="D3D11Base.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="SphereGeneration.cpp" />
+    <ClCompile Include="Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2025-Computer-Graphcis-Term-Project.rc" />

@@ -25,7 +25,7 @@ Camera::Camera(const XMFLOAT4& eye, const XMFLOAT4& look, const XMFLOAT4& up)
 
 void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 {
-	if (xDelta * xDelta + yDelta * yDelta > FLT_EPSILON)
+	if (fabsf(xDelta) + fabsf(yDelta) > FLT_EPSILON)
 	{
 		mYaw += xDelta;
 		mPitch += yDelta;
@@ -43,7 +43,8 @@ void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 	XMVECTOR forward = XMVectorSet(COS * sinf(mYaw), sinf(mPitch), COS * cosf(mYaw), 0.0F);
 	XMVECTOR up = XMLoadFloat4(&mUp);
 	XMVECTOR right = XMVector3Normalize(XMVector3Cross(up, forward));
-	up = XMVector3Normalize(XMVector3Cross(forward, right));
+	// up = XMVector3Normalize(XMVector3Cross(forward, right));
+	XMVECTOR forwardMove = XMVector3Normalize(XMVector3Cross(right, up));
 
 	XMVECTOR pos = XMLoadFloat4(&mPosition);
 	XMVECTOR move = XMVectorZero();
@@ -51,10 +52,10 @@ void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 	XMVECTOR yyy0 = XMVECTOR{ moveVector.y, moveVector.y, moveVector.y, 0.F };
 	XMVECTOR zzz0 = XMVECTOR{ moveVector.z, moveVector.z, moveVector.z, 0.F };
 	move = XMVectorMultiplyAdd(xxx0, right, move);
-	// move = XMVectorMultiplyAdd(yyy0, up, move);
-	move = XMVectorMultiplyAdd(yyy0, XMVECTOR{ 0.F, 1.F, 0.F, 0.F }, move);
-	// move = XMVectorMultiplyAdd(zzz0, forward, move);
-	move = XMVectorMultiplyAdd(zzz0, XMVector3Cross(right, XMVECTOR{ 0.F, 1.F, 0.F, 0.F }), move);
+	move = XMVectorMultiplyAdd(yyy0, up, move);
+	// move = XMVectorMultiplyAdd(yyy0, XMVECTOR{ 0.F, 1.F, 0.F, 0.F }, move);
+	move = XMVectorMultiplyAdd(zzz0, forwardMove, move);
+	// move = XMVectorMultiplyAdd(zzz0, XMVector3Cross(right, XMVECTOR{ 0.F, 1.F, 0.F, 0.F }), move);
 	pos = XMVectorAdd(pos, move);
 
 	XMVECTOR focus = XMVectorAdd(pos, forward);

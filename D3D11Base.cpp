@@ -77,25 +77,28 @@ LB_FAILED_GET_ADAPTER:;
 	return false;
 }
 
-ID3D11Device* D3D11Base::GetDevice(void) const
+ID3D11Device* D3D11Base::GetDevice(void)
 {
 	return mDevice;
 }
 
-ID3D11DeviceContext* D3D11Base::GetImmediateContext(void) const
+ID3D11DeviceContext* D3D11Base::GetImmediateContext(void)
 {
 	return mImmediateContext;
 }
 
-ID3D11RenderTargetView* D3D11Base::GetRenderTargetView(void) const {
+ID3D11RenderTargetView* D3D11Base::GetRenderTargetView(void)
+{
 	return mRenderTargetView;
 }
 
-ID3D11DepthStencilView* D3D11Base::GetDepthStencilView(void) const {
+ID3D11DepthStencilView* D3D11Base::GetDepthStencilView(void)
+{
 	return mDepthStencilView;
 }
 
-IDXGISwapChain* D3D11Base::GetSwapChain(void) const {
+IDXGISwapChain* D3D11Base::GetSwapChain(void)
+{
 	return mSwapChain;
 }
 
@@ -127,6 +130,17 @@ ID3DBlob* D3D11Base::CompileShader(const LPWSTR filePath, /*const LPCSTR entryPo
 	return pShaderBlob;
 }
 
+ID3D11InputLayout* D3D11Base::CreateInputLayout(const D3D11_INPUT_ELEMENT_DESC* layout, UINT numElements, ID3DBlob* vsBlob) const
+{
+	ID3D11InputLayout* res;
+	HRESULT hr = mDevice->CreateInputLayout(layout, numElements, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &res);
+	if (FAILED(hr))
+	{
+		return nullptr;
+	}
+	return res;
+}
+
 ID3D11InputLayout* D3D11Base::GetInputLayout(void) const
 {
 	return mInputLayout;
@@ -137,20 +151,23 @@ bool D3D11Base::AddVertexShader(const LPWSTR filePath)
 	return addVertexShader(filePath);
 }
 
-bool D3D11Base::addVertexShader(const LPWSTR filePath, const UINT numElements, const D3D11_INPUT_ELEMENT_DESC* layout)
+bool D3D11Base::addVertexShader(const LPWSTR filePath, UINT numElements, const D3D11_INPUT_ELEMENT_DESC* layout)
 {
 	HRESULT hr;
 	ID3DBlob* pVSBlob = CompileShader(filePath, "vs_5_0");
-	if (pVSBlob == nullptr) {
+	if (pVSBlob == nullptr) 
+	{
 		return false;
 	}
 	ID3D11VertexShader* vertexShader = nullptr;
 	mDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &vertexShader);
 	mVertexShaders->push_back(vertexShader);
 
-	if (layout != nullptr) {
+	if (layout != nullptr) 
+	{
 		hr = mDevice->CreateInputLayout(layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &mInputLayout);
-		if (FAILED(hr)) {
+		if (FAILED(hr)) 
+		{
 			pVSBlob->Release();
 			return false;
 		}
@@ -168,7 +185,8 @@ bool D3D11Base::AddPixelShader(const LPWSTR filePath)
 	HRESULT hr = NULL;
 	ID3DBlob* pPSBlob = CompileShader(filePath, "ps_5_0");
 	ID3D11PixelShader* pixelShader = nullptr;
-	if (pPSBlob == nullptr) {
+	if (pPSBlob == nullptr) 
+	{
 		return false;
 	}
 	mDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &pixelShader);
@@ -192,17 +210,17 @@ ID3D11PixelShader* D3D11Base::GetPixelShader(const eShaderID id) const
 	return (*mPixelShaders)[(int)id];
 }
 
-ID3D11Buffer* D3D11Base::GetCBFrameBuffer(void) const
+ID3D11Buffer* D3D11Base::GetCBFrameBuffer(void)
 {
 	return mCBFrameBuffer;
 }
 
-ID3D11Buffer* D3D11Base::GetCBResizeBuffer(void) const
+ID3D11Buffer* D3D11Base::GetCBResizeBuffer(void)
 {
 	return mCBResizeBuffer;
 }
 
-ID3D11Buffer* D3D11Base::GetCBObjectBuffer(void) const
+ID3D11Buffer* D3D11Base::GetCBObjectBuffer(void)
 {
 	return mCBObjectBuffer;
 }
@@ -222,9 +240,18 @@ void D3D11Base::OnResize(HWND hWnd)
 	mImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
 	mImmediateContext->Flush();
 
-	if (mDepthStencil) { mDepthStencil->Release(); }
-	if (mDepthStencilView) { mDepthStencilView->Release(); }
-	if (mRenderTargetView) { mRenderTargetView->Release(); }
+	if (mDepthStencil) 
+	{ 
+		mDepthStencil->Release(); 
+	}
+	if (mDepthStencilView) 
+	{ 
+		mDepthStencilView->Release();
+	}
+	if (mRenderTargetView)
+	{ 
+		mRenderTargetView->Release(); 
+	}
 
 	HRESULT hr;
 

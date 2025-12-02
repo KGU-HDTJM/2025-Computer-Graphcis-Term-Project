@@ -353,7 +353,6 @@ void Map::updateVertexBuffer(const vector<Vertex>& newPerlin)
 	const size_t HALF_BASE_LENGTH = BASE_LENGTH / 2;
 	const size_t LAYER_LENGTH = newPerlin.size();
 
-
 	size_t standIdx = rand() % HALF_BASE_LENGTH;
 
 	for (size_t i = 0; i < LAYER_LENGTH && standIdx + i < BASE_LENGTH; ++i)

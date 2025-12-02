@@ -16,7 +16,8 @@
 #include "SphereGenerator.h"
 #include "Camera.h"
 #include "Map.h"
-#include <cstdlib>
+#include "Timer.h"
+#include "ColorTextureMap.h"
 
 #define MAX_LOADSTRING 100
 
@@ -26,12 +27,15 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND g_hWnd;
 
-// TODO: Pope Coding standard
-D3D11Base base;
+
+D3D11Base* Base;
 Map* pMap; 
 SphereGenerator* pSPGen;
 Sphere* pSphere;
 Camera* MainCamera;
+Timer* GameTimer;
+ColorTextureMap* ColorTexture;
+
 // moving
 struct MoveFactor {
 	float Forward;
@@ -56,13 +60,6 @@ struct RectInfo {
 	UINT Height;
 } WinInfo;
 
-// timer
-LARGE_INTEGER Frequency;
-LARGE_INTEGER PrevTime;
-
-LONG YRotate;
-LONG XRotate;
-
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -73,7 +70,6 @@ bool Init(void);
 void Update(void);
 void Render(void);
 void Shutdown(void);
-float GetDeltaTime(void);
 
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -114,6 +110,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		}
 		Update();
 		Render();
+		GameTimer->PrintFPS();
 	}
 	Shutdown();
 	return (int)msg.wParam;
@@ -344,12 +341,13 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 bool Init(void)
 {
-    if (!base.Initialize(g_hWnd)) {
+	Base = new D3D11Base();
+    if (!Base->Initialize(g_hWnd)) {
         return false;
     }
-    pMap = new Map(&base);
+    // pMap = new Map(Base);
 
-	pSPGen = new SphereGenerator(&base);
+	pSPGen = new SphereGenerator(Base);
 
 	pSphere = pSPGen->CreateSphere(1.5F, XMFLOAT4(0.F, 0.F, 0.F, 1.F));
 	MainCamera = new Camera(
@@ -374,9 +372,10 @@ bool Init(void)
 	MovingFactor.Left = 0;
 	MovingFactor.Right = 0;
 	MovingFactor.Up = 0;
-	
-	QueryPerformanceFrequency(&Frequency);
-	QueryPerformanceCounter(&PrevTime);
+
+	ColorTexture = new ColorTextureMap(Base->GetDevice());
+
+	GameTimer = new Timer();
 	return true;
 }
 
@@ -387,7 +386,7 @@ void Update(void)
 	moveVec.y = MovingFactor.Up - MovingFactor.Down;
 	moveVec.z = MovingFactor.Forward - MovingFactor.Backward;
 	moveVec.w = 0;
-	float deltaTime = GetDeltaTime();
+	float deltaTime = GameTimer->GetDeltaTime();
 	
 	XMVECTOR v = XMVector3Normalize(XMLoadFloat4(&moveVec));
 	v = XMVectorScale(v, deltaTime * 10);
@@ -396,7 +395,7 @@ void Update(void)
 	float xDelta = 0;
 	float yDelta = 0;
 
-	Position screenCenter = { (WinInfo.Pos.X + WinInfo.Width / 2), (WinInfo.Pos.Y + WinInfo.Height / 2) };
+	Position screenCenter = { (WinInfo.Pos.X + static_cast<int>(WinInfo.Width >> 1)), (WinInfo.Pos.Y + static_cast<int>(WinInfo.Height >> 1)) };
 	if (bFixMousePos)
 	{
 		SetCursorPos(screenCenter.X, screenCenter.Y);
@@ -405,11 +404,6 @@ void Update(void)
 		xDelta /= WinInfo.Width;
 
 		yDelta = static_cast<float>(MousePos.Y - WinInfo.Center.y);
-		/*char outStr[30] = "";
-		_itoa_s(MousePos.X - WinInfo.Width / 2, outStr, 10);
-		outStr[29] = 0;
-		outStr[28] = 10;
-		OutputDebugStringA(outStr);*/
 		yDelta /= WinInfo.Height;
 	}
 	MainCamera->Update(moveVec, xDelta * deltaTime, -yDelta * deltaTime);
@@ -419,48 +413,44 @@ void Render(void)
 {
 	const static float BG_COLOR[] = { 0.0f, 0.125f, 0.3f, 1.0f };
 
-	ID3D11Device* device = base.GetDevice();
-	ID3D11DeviceContext* immediateContext = base.GetImmediateContext();
-	IDXGISwapChain* swapChain = base.GetSwapChain();
+	ID3D11Device* device = Base->GetDevice();
+	ID3D11DeviceContext* immediateContext = Base->GetImmediateContext();
+	IDXGISwapChain* swapChain = Base->GetSwapChain();
 
 
-	ID3D11Buffer* frameCBBuffer = base.GetCBFrameBuffer();
-	
-	
-	
+	ID3D11Buffer* frameCBBuffer = Base->GetCBFrameBuffer();
 
-	immediateContext->ClearRenderTargetView(base.GetRenderTargetView(), BG_COLOR);
-	immediateContext->ClearDepthStencilView(base.GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+	immediateContext->ClearRenderTargetView(Base->GetRenderTargetView(), BG_COLOR);
+	immediateContext->ClearDepthStencilView(Base->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    immediateContext->IASetInputLayout(base.GetInputLayout());
+    immediateContext->IASetInputLayout(Base->GetInputLayout());
 	CBFrame cbFrame;
 	cbFrame.View = XMMatrixTranspose(MainCamera->GetViewMatrix());
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
-	pMap->UpdateCameraPos(MainCamera->GetPosition());
+	// pMap->UpdateCameraPos(MainCamera->GetPosition());
 
+
+	ID3D11ShaderResourceView* srv = ColorTexture->GetHSVShaderRV();
+	immediateContext->PSSetShaderResources(0, 1, &srv);
+	ID3D11SamplerState* samplerLinear = ColorTexture->GetSamplerLinear();
+	immediateContext->PSSetSamplers(0, 1, &samplerLinear);
     pSphere->Draw();
-    pMap->Draw();
+    // pMap->Draw();
     
-    swapChain->Present(1, 0);
+    swapChain->Present(0, 0);
 }
 
 void Shutdown(void)
 {
-    delete pMap;
+    // delete pMap;
+	delete GameTimer;
+	delete ColorTexture;
     delete pSphere;
     delete pSPGen;
-	base.Cleanup();
+	Base->Cleanup();
+	delete Base;
 }
 
-float GetDeltaTime(void)
-{
-	LARGE_INTEGER currentTime;
-	QueryPerformanceCounter(&currentTime);
 
-	float deltaTime = static_cast<float>(currentTime.QuadPart - PrevTime.QuadPart) / Frequency.QuadPart;
-	PrevTime = currentTime;
-
-	return deltaTime;
-}
 

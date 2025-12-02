@@ -42,18 +42,19 @@ public:
 	void OnResize(HWND hWnd);
 	void Cleanup(void);
 	
-	ID3D11Device* GetDevice(void) const;
-	ID3D11DeviceContext* GetImmediateContext(void) const;
-	ID3D11RenderTargetView* GetRenderTargetView(void) const;
-	ID3D11DepthStencilView* GetDepthStencilView(void) const;
+	ID3D11Device* GetDevice(void);
+	ID3D11DeviceContext* GetImmediateContext(void);
+	ID3D11RenderTargetView* GetRenderTargetView(void);
+	ID3D11DepthStencilView* GetDepthStencilView(void);
 	ID3D11VertexShader* GetVertexShader(const eShaderID id) const;
 	ID3D11PixelShader* GetPixelShader(const eShaderID id) const;
-	ID3D11Buffer* GetCBFrameBuffer(void) const;
-	ID3D11Buffer* GetCBResizeBuffer(void) const;
-	ID3D11Buffer* GetCBObjectBuffer(void) const;
-	IDXGISwapChain* GetSwapChain(void) const;
-	ID3D11RasterizerState* GetRasterState(void) const;
+	ID3D11Buffer* GetCBFrameBuffer(void);
+	ID3D11Buffer* GetCBResizeBuffer(void);
+	ID3D11Buffer* GetCBObjectBuffer(void);
+	IDXGISwapChain* GetSwapChain(void);
+	// ID3D11RasterizerState* GetRasterState(void) const;
 	ID3DBlob* CompileShader(const LPWSTR filePath, /*const LPCSTR entryPoint,*/ const LPCSTR target) const;
+	ID3D11InputLayout* CreateInputLayout(const D3D11_INPUT_ELEMENT_DESC* layout, UINT numElements, ID3DBlob* vsBlob) const;
 	ID3D11InputLayout* GetInputLayout(void) const;
 
 private:
@@ -61,9 +62,9 @@ private:
 	bool createDeviceAndSwapChain(HWND hWnd, UINT width, UINT height);
 	bool createRenderTargets(UINT width, UINT height);
 	bool createConstBuffers(UINT width, UINT height);
-	bool createRasterizer(void);
+	// bool createRasterizer(void);
 	void setFullSizeViewport(UINT width, UINT height);
-	bool addVertexShader(const LPWSTR filePath, const UINT numElements = 0, const D3D11_INPUT_ELEMENT_DESC* layoutOrNULL = nullptr);
+	bool addVertexShader(const LPWSTR filePath, UINT numElements = 0, const D3D11_INPUT_ELEMENT_DESC* layoutOrNULL = nullptr);
 
 private:
 	ID3D11Device* mDevice = nullptr;
