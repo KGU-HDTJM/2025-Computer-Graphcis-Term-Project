@@ -60,8 +60,10 @@ private:
 
 	eastl::vector<Vertex> createVertex(const int& x, const int& z, const float& scale);
 	
-	void createIndex(const int& x, const int& z);
+	void accumulateFaceNormalsAndIndices(const int& x, const int& z);
 	bool createBuffers(void);
+
+	void normalizeVertexNormal(void);
 
 	void updateVertexBuffer(const eastl::vector<Vertex>& newPerlin, const int& x, const int& z);
 	void updateChunkIndexBuffers(void);
