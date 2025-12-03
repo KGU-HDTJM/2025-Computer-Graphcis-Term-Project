@@ -8,11 +8,6 @@ using namespace eastl;
 using namespace DirectX;
 
 
-#define ADD_PERLIN_LAYER(x, z, scale) \
-    do { \
-        auto newPerlin = Map::createVertex((x), (z), (scale)); \
-        Map::updateVertexBuffer(newPerlin); \
-    } while(0
 
 const float PI = acosf(-1);
 
@@ -62,7 +57,6 @@ void Map::Draw(void)
 	ctx->VSSetConstantBuffers(2, 1, &cbProj);  
 	ctx->PSSetConstantBuffers(0, 1, &cbWorld);
 
-	// IA 설정
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
 	ctx->IASetInputLayout(mBase->GetInputLayout());
@@ -101,13 +95,32 @@ bool Map::loadMeshData(void)
 	mVertices = createVertex(MAP_DIM, MAP_DIM, 1);
 	createIndex(MAP_DIM, MAP_DIM);
 
+
+	float scale[] = { 1, 13, 5, 9 };
+	const int PICH_DIM = (MAP_DIM / (TERRAIN_COUNT / 2));
+
+	for (int i = 0; i < TERRAIN_COUNT / 2; ++i)
+	{
+		for (int j = 0; j < TERRAIN_COUNT / 2; ++j)
+		{
+			srand(static_cast<uint32_t>(std::time(nullptr)));
+
+			vector<Vertex> newLayer = createVertex(PICH_DIM, PICH_DIM, scale[j + (TERRAIN_COUNT / 2) * i]);
+			
+			const int x = j * (MAP_DIM / (TERRAIN_COUNT / 2));
+			const int z = i * (MAP_DIM / (TERRAIN_COUNT / 2));
+			updateVertexBuffer(newLayer, x, z);
+		}
+	}
+
 	return true;
 }
 
 
-vector<Vertex> Map::createVertex(const int& x, const int& z, const int& scale)
-{
 
+
+vector<Vertex> Map::createVertex(const int& x, const int& z, const float& scale)
+{
 	vector<float> randDir;
 	vector<Vertex> vertices;
 
@@ -132,8 +145,8 @@ vector<Vertex> Map::createVertex(const int& x, const int& z, const int& scale)
 	{
 		for (int i = 0; i < GRID_WIDTH; ++i)
 		{
-			const float px = ((float)i / (float)(GRID_WIDTH));
-			const float py = ((float)j / (float)(GRID_HEIGHT));
+			const float px = ((float)i / (float)(GRID_WIDTH)) * (float)scale;
+			const float py = ((float)j / (float)(GRID_HEIGHT)) * (float)scale;
 			float standX = px - floorf(px);
 			float standY = py - floorf(py);
 
@@ -158,7 +171,7 @@ vector<Vertex> Map::createVertex(const int& x, const int& z, const int& scale)
 			float n1 = lerp(p10, p11, v);
 			float result = lerp(n0, n1, u);
 
-			float adjustHeight = (result + 1.0f) * 0.5f * (10.0f * scale) + 1.0f;
+			float adjustHeight = (result + 1.0f) * 0.5f * (10.0f  * scale)+ 1.0f;
 
 			heights[i + GRID_WIDTH * j] = adjustHeight;
 		}
@@ -191,8 +204,8 @@ vector<Vertex> Map::createVertex(const int& x, const int& z, const int& scale)
 
 			XMVECTOR n = XMVectorSet(-gx, 2.0f, -gz, 0.0f);
 			n = XMVector3Normalize(n);
-			XMFLOAT3 nf;
-			XMStoreFloat3(&nf, n);
+			XMFLOAT4 nf;
+			XMStoreFloat4(&nf,n);
 			node.Normal = { nf.x, nf.y, nf.z, 0.0f };
 
 			vertices.push_back(node);
@@ -317,30 +330,23 @@ LB_FAILED_CREATE_VERTEX_BUFFER:
 }
 
 
-void Map::updateVertexBuffer(const vector<Vertex>& newPerlin)
+void Map::updateVertexBuffer(const vector<Vertex>& newPerlin, const int& x, const int& z)
 {
-	const size_t BASE_LENGTH = mVertices.size();
-	const size_t HALF_BASE_LENGTH = BASE_LENGTH / 2;
-	const size_t LAYER_LENGTH = newPerlin.size();
+	const int BASE_DIM= mVertices.size();
+	const int HALF_BASE_DIM= BASE_DIM/ 2;
+	const int LAYER_DIM = newPerlin.size();
+	const float BLEND = 0.5f;
 
-	size_t standIdx = rand() % HALF_BASE_LENGTH;
+	int standIdx = x + (MAP_DIM / 2) * z;
 
-	for (size_t i = 0; i < LAYER_LENGTH && standIdx + i < BASE_LENGTH; ++i)
+	for (int i = 0; i < LAYER_DIM&& standIdx + i < BASE_DIM; ++i)
 	{
-		XMFLOAT4 result;
-		XMVECTOR layerPos = XMLoadFloat4(&newPerlin[i].Position);
-		XMVECTOR originPos = XMLoadFloat4(&mVertices[standIdx + i].Position);
-		
-		layerPos = XMVectorAdd(originPos, layerPos);
-		XMStoreFloat4(&result, layerPos);
-		result.w = 1.0f;
+		float h_old = mVertices[standIdx + i].Position.y;
+		float h_new = newPerlin[i].Position.y;
+		float h_final = h_old * BLEND + h_new * BLEND;
 
-		mVertices[standIdx + i].Position = result;
+		mVertices[standIdx + i].Position.y = h_final;
 	}
-
-	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
-
-	ctx->UpdateSubresource(mVertexBuffer, 0, nullptr, mVertices.data(), 0, 0);
 }
 
 void Map::updateChunkIndexBuffers(void)

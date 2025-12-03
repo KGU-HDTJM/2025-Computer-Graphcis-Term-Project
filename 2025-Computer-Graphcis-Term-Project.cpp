@@ -27,6 +27,7 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 HWND g_hWnd;
 
+//TODO : put light position with global value
 
 D3D11Base* Base;
 Map* pMap; 
@@ -273,6 +274,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			MovingFactor.Down = 0.0F;
 		}
 		break;
+
+		//TODO: when r button is pressed, boolean will changed to false then do not update light position
+		//		after boolean became true, move light position to camera position
+	
+
 		default:
 			break;
 		}
@@ -354,8 +360,8 @@ bool Init(void)
 		XMFLOAT4(0.F, 20.F, -40.F, 1.0F), 
 		XMFLOAT4(0.F, 0.F, 0.F, 0.F), 
 		XMFLOAT4(0.F, 1.F, 0.F, 0.F));
-	MainCamera->Sensitivity.x = 6.0F;
-	MainCamera->Sensitivity.y = 6.0F;
+	MainCamera->Sensitivity.x = 100.0F;
+	MainCamera->Sensitivity.y = 100.0F;
 	RECT rect;
 	GetWindowRect(g_hWnd, &rect);
 	WinInfo.Width = rect.right - rect.left;
