@@ -68,7 +68,7 @@
     <ClCompile Include="Map.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SphereGeneration.cpp">
+    <ClCompile Include="SphereGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Sphere.cpp">
@@ -119,12 +119,18 @@
     <FxCompile Include="default.ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="instanced_sphere.cs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="sphere.common.hlsli">
       <Filter>Shaders</Filter>
     </None>
     <None Include="default.common.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="instanced_sphere.common.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

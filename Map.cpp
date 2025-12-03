@@ -70,8 +70,8 @@ void Map::Draw(void)
 	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
 	XMMATRIX translate = XMMatrixTranslation(-200.0f, -10.0f, -200.0f);
 
-	cbObj.World = scale * translate;
-	cbObj.World = XMMatrixTranspose(cbObj.World);
+	
+	XMStoreFloat4x4(&cbObj.World, XMMatrixTranspose(scale * translate));
 
 
 	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbObj, 0, 0);
@@ -325,8 +325,8 @@ void Map::updateIndexBuffer(void)
 		return;
 	}
 
-	int maxX = (camX + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE - 1 : camX + CHUNK_SIZE;
-	int maxZ = (camZ + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE - 1: camZ + CHUNK_SIZE;
+	int maxX = (camX + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE : camX + CHUNK_SIZE;
+	int maxZ = (camZ + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE - 1: camZ + CHUNK_SIZE - 1;
 	int minX = (camX - CHUNK_SIZE) < -HALF_MAP_SIZE ? -HALF_MAP_SIZE : camX - CHUNK_SIZE;
 	int minZ = (camZ - CHUNK_SIZE) < -HALF_MAP_SIZE ? -HALF_MAP_SIZE : camZ - CHUNK_SIZE;
 

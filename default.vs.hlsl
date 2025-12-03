@@ -14,10 +14,11 @@ VS_OUTPUT main(VS_INPUT input)
     
     output.Position = mul(input.Position, World);
     output.Position.xz *= 4;
+    output.WorldPos = output.Position.xyz;
     output.Position = mul(output.Position, View);
     output.Position = mul(output.Position, Projection);
     output.Normal = normalize(mul(input.Normal.xyz, (float3x3)World));
     output.TexCoord = input.TexCoord;
-    output.WolrdPos = output.Position.xyz;
+    
     return output;
 }

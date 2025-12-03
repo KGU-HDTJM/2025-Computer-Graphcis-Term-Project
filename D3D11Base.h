@@ -33,7 +33,7 @@ public:
 		, mRenderTargetView(nullptr), mDepthStencil(nullptr), mDepthStencilView(nullptr)
 		, mVertexShaders(nullptr), mInputLayout(nullptr), mPixelShaders(nullptr)
 	{
-		mCBResize.Projection = XMMatrixIdentity();
+		XMStoreFloat4x4(&mCBResize.Projection, XMMatrixIdentity());
 	}
 	~D3D11Base(void) {};
 	bool Initialize(HWND hWnd);

@@ -20,6 +20,7 @@ Camera::Camera(const XMFLOAT4& eye, const XMFLOAT4& look, const XMFLOAT4& up)
 	mPitch = asinf(setur);
 	mViewVector.w = 0.F;
 	mUp = up;
+	Sensitivity = XMFLOAT2(1.0F, 1.0F);
 	Update(XMFLOAT4(0, 0, 0, 0), 0, 0);
 }
 
@@ -27,8 +28,8 @@ void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 {
 	if (fabsf(xDelta) + fabsf(yDelta) > FLT_EPSILON)
 	{
-		mYaw += xDelta;
-		mPitch += yDelta;
+		mYaw += xDelta * Sensitivity.x;
+		mPitch += yDelta * Sensitivity.y;
 	}
 	const float LIMIT = XM_PIDIV2 - FLT_EPSILON;
 	if (mPitch > LIMIT)
@@ -74,4 +75,9 @@ XMMATRIX Camera::GetViewMatrix(void) const
 const XMFLOAT4& Camera::GetPosition() const
 {
 	return mPosition;
+}
+
+const XMFLOAT4& Camera::GetViewVector() const
+{
+	return mViewVector;
 }

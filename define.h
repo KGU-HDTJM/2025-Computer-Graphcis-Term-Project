@@ -12,22 +12,32 @@ struct Vertex
 
 struct CBFrame
 {
-	XMMATRIX View;
+	XMFLOAT4X4 View;
 	XMFLOAT4 LightPos;
 	XMFLOAT4 LightCL; // Light Color(xyz) and Lumen(w);
 };
 
 struct CBResize
 {
-	XMMATRIX Projection;
+	XMFLOAT4X4 Projection;
 };
 
 struct CBObject {
-	XMMATRIX World;
+	XMFLOAT4X4 World;
 };
 
 struct TessellationCB
 {
 	float TessFactor;
 	DirectX::XMFLOAT3 Padding;
+};
+
+struct InstanceData
+{
+	CBObject BaseCB;
+	
+	XMFLOAT2 TexCoord;
+	XMFLOAT2 _Padding;
+	float Radius;
+	XMFLOAT3 Velocity;
 };

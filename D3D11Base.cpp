@@ -255,7 +255,7 @@ void D3D11Base::OnResize(HWND hWnd)
 
 	HRESULT hr;
 
-	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
+	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, static_cast<float>(width) / static_cast<float>(height), 0.1f, 1000.0f);
 	hr = mSwapChain->ResizeBuffers(1, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 	if (FAILED(hr))
 	{
@@ -267,7 +267,7 @@ void D3D11Base::OnResize(HWND hWnd)
 		goto LB_FAILED_CREATE_RENDER_TARGETS;
 	}
 
-	mCBResize.Projection = XMMatrixTranspose(projection);
+	XMStoreFloat4x4(&mCBResize.Projection, XMMatrixTranspose(projection));
 	mImmediateContext->UpdateSubresource(mCBResizeBuffer, 0, nullptr, &mCBResize, 0, 0);
 
 	return;
@@ -392,12 +392,12 @@ bool D3D11Base::createConstBuffers(UINT width, UINT height)
 	XMMATRIX view = XMMatrixLookAtLH(eye, at, up);
 
 	CBFrame cbFrame;
-	cbFrame.View = XMMatrixTranspose(view);
+	XMStoreFloat4x4(&cbFrame.View, XMMatrixTranspose(view));
 	cbFrame.LightCL = XMFLOAT4(0.F, 0.F, 0.F, 0.F);
 	cbFrame.LightPos = XMFLOAT4(0.F, 0.F, 0.F, 0.F);
 
 	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
-	mCBResize.Projection = XMMatrixTranspose(projection);
+	XMStoreFloat4x4(&mCBResize.Projection, XMMatrixTranspose(projection));
 
 
 	D3D11_BUFFER_DESC bufferDesc;

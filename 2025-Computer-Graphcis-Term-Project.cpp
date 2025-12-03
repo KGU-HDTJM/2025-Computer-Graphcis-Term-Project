@@ -349,12 +349,13 @@ bool Init(void)
 
 	pSPGen = new SphereGenerator(Base);
 
-	pSphere = pSPGen->CreateSphere(1.5F, XMFLOAT4(0.F, 0.F, 0.F, 1.F));
+	pSphere = pSPGen->CreateSphere(1.5F, XMFLOAT4(30.F, 0.F, 0.F, 1.F));
 	MainCamera = new Camera(
 		XMFLOAT4(0.F, 20.F, -40.F, 1.0F), 
 		XMFLOAT4(0.F, 0.F, 0.F, 0.F), 
 		XMFLOAT4(0.F, 1.F, 0.F, 0.F));
-
+	MainCamera->Sensitivity.x = 6.0F;
+	MainCamera->Sensitivity.y = 6.0F;
 	RECT rect;
 	GetWindowRect(g_hWnd, &rect);
 	WinInfo.Width = rect.right - rect.left;
@@ -411,7 +412,7 @@ void Update(void)
 
 void Render(void)
 {
-	const static float BG_COLOR[] = { 0.0f, 0.125f, 0.3f, 1.0f };
+	const static float BG_COLOR[] = { 0.2F, 0.125F, 0.5F, 1.0F };
 
 	ID3D11Device* device = Base->GetDevice();
 	ID3D11DeviceContext* immediateContext = Base->GetImmediateContext();
@@ -421,17 +422,16 @@ void Render(void)
 	ID3D11Buffer* frameCBBuffer = Base->GetCBFrameBuffer();
 
 	immediateContext->ClearRenderTargetView(Base->GetRenderTargetView(), BG_COLOR);
-	immediateContext->ClearDepthStencilView(Base->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+	immediateContext->ClearDepthStencilView(Base->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0F, 0);
 
     immediateContext->IASetInputLayout(Base->GetInputLayout());
 	CBFrame cbFrame;
-	cbFrame.View = XMMatrixTranspose(MainCamera->GetViewMatrix());
+	XMStoreFloat4x4(&cbFrame.View, XMMatrixTranspose(MainCamera->GetViewMatrix()));
 	cbFrame.LightPos = MainCamera->GetPosition();
 	cbFrame.LightCL = XMFLOAT4(1.0F, 1.0F, 1.0F, 1.0F); // change lumen and colors
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
 	pMap->UpdateCameraPos(MainCamera->GetPosition());
-
 
 	ID3D11ShaderResourceView* srv = ColorTexture->GetHSVShaderRV();
 	immediateContext->PSSetShaderResources(0, 1, &srv);
@@ -445,7 +445,7 @@ void Render(void)
 
 void Shutdown(void)
 {
-    // delete pMap;
+    delete pMap;
 	delete GameTimer;
 	delete ColorTexture;
     delete pSphere;

@@ -20,20 +20,11 @@ void Sphere::Draw(void)
 	UINT indexCount;
 	ID3D11Buffer* indexBuffer = mGenerator->GetIndexBuffer(indexCount);
 
-	// Prepare per-frame CB (World)
-	CBObject cbObject;
-	cbObject.World = XMMatrixTranspose(mCBObject.World);
-
-	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbObject, 0, 0);
-
+	ctx->UpdateSubresource(cbWorld, 0, nullptr, &mCBObject, 0, 0);
 
 	// Set shaders
 	ctx->VSSetShader(mGenerator->GetVertexShader(), nullptr, 0);
 
-	// IMPORTANT: shader registers in sphere.common.hlsli are:
-	//   b0 -> World, b1 -> View, b2 -> Projection, b3 -> TessellationCB
-	// Bind buffers to match those registers for each shader stage that uses them.
-	// Bind to VS
 	ctx->VSSetConstantBuffers(0, 1, &cbWorld);             // b0 = World
 	ctx->VSSetConstantBuffers(1, 1, &cbView);    // b1 = View
 	ctx->VSSetConstantBuffers(2, 1, &cbProj); // b2 = Projection
@@ -52,6 +43,7 @@ void Sphere::Draw(void)
 	// Pixel shader
 	ctx->PSSetShader(mGenerator->GetPixelShader(), nullptr, 0);
 	ctx->PSSetConstantBuffers(0, 1, &cbWorld);
+	ctx->PSSetConstantBuffers(1, 1, &cbView);
 
 	// IA setup
 	UINT stride = sizeof(Vertex);

@@ -21,5 +21,5 @@ struct VS_OUTPUT
     float4 Position : SV_POSITION;
     float3 Normal : TEXCOORD0;
     float2 TexCoord : TEXCOORD1;
-    float3 WolrdPos : TEXCOORD2;
+    float3 WorldPos : TEXCOORD2;
 };

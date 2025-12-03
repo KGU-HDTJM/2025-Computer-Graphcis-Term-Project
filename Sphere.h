@@ -1,6 +1,5 @@
 #pragma once
 
-#include <d3d11.h>
 #include <DirectXMath.h>
 
 #include "define.h"
@@ -17,7 +16,7 @@ public:
 	{
 		XMMATRIX scale = XMMatrixScaling(radius, radius, radius);
 		XMMATRIX trans = XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z);
-		mCBObject.World = XMMatrixMultiply(scale, trans);
+		XMStoreFloat4x4(&mCBObject.World, XMMatrixTranspose(scale * trans));
 	}
 	~Sphere();
 

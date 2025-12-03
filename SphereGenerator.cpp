@@ -7,15 +7,15 @@
 
 Vertex cubeVertices[VERTEX_COUNT] =
 {
-	{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.000F, 1.0F) },
-	{ XMFLOAT4(-1.0f,  1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.111F, 1.0F) },
-	{ XMFLOAT4(1.0f,  1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.222F, 1.0F) },
+	{ XMFLOAT4(-1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.333F, 1.0F) },
+	{ XMFLOAT4(-1.0f,  1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.333F, 1.0F) },
+	{ XMFLOAT4(1.0f,  1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.333F, 1.0F) },
 	{ XMFLOAT4(1.0f, -1.0f, -1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.333F, 1.0F) },
 
-	{ XMFLOAT4(-1.0f, -1.0f,  1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.444F, 1.0F) },
-	{ XMFLOAT4(-1.0f,  1.0f,  1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.555F, 1.0F) },
-	{ XMFLOAT4(1.0f,  1.0f,  1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.666F, 1.0F) },
-	{ XMFLOAT4(1.0f, -1.0f,  1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.777F, 1.0F) },
+	{ XMFLOAT4(-1.0f, -1.0f,  1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.333F, 1.0F) },
+	{ XMFLOAT4(-1.0f,  1.0f,  1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.333F, 1.0F) },
+	{ XMFLOAT4(1.0f,  1.0f,  1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.333F, 1.0F) },
+	{ XMFLOAT4(1.0f, -1.0f,  1.0f, 1.0f), XMFLOAT4(0, 0, 0, 0), XMFLOAT2(0.333F, 1.0F) },
 };
 
 // 큐브 인덱스 데이터
