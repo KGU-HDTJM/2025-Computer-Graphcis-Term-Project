@@ -255,7 +255,7 @@ void D3D11Base::OnResize(HWND hWnd)
 
 	HRESULT hr;
 
-	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, static_cast<float>(width) / static_cast<float>(height), 0.1f, 1000.0f);
+	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, static_cast<float>(width) / static_cast<float>(height), 0.1f, FAR_DISTANCE);
 	hr = mSwapChain->ResizeBuffers(1, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
 	if (FAILED(hr))
 	{
@@ -396,7 +396,7 @@ bool D3D11Base::createConstBuffers(UINT width, UINT height)
 	cbFrame.LightCL = XMFLOAT4(0.F, 0.F, 0.F, 0.F);
 	cbFrame.LightPos = XMFLOAT4(0.F, 0.F, 0.F, 0.F);
 
-	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, 100.0f);
+	XMMATRIX projection = XMMatrixPerspectiveFovLH(XM_PIDIV4, (FLOAT)width / (FLOAT)height, 0.1f, FAR_DISTANCE);
 	XMStoreFloat4x4(&mCBResize.Projection, XMMatrixTranspose(projection));
 
 

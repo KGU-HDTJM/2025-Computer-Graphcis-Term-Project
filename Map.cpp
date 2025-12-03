@@ -95,8 +95,7 @@ bool Map::loadMeshData(void)
 	mVertices = createVertex(MAP_DIM, MAP_DIM, 1);
 	createIndex(MAP_DIM, MAP_DIM);
 
-
-	float scale[] = { 1, 13, 5, 9 };
+	float scale[] = { 1, 25, 35, 9 };
 	const int PICH_DIM = (MAP_DIM / (TERRAIN_COUNT / 2));
 
 	for (int i = 0; i < TERRAIN_COUNT / 2; ++i)
@@ -270,20 +269,22 @@ bool Map::createBuffers(void)
 	} 
 
 	{
+		const size_t PADDING = CHUNK_DIM + 1;
 		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-		bufferDesc.ByteWidth = sizeof(uint32_t) * CHUNK_DIM * CHUNK_DIM * 6;
+		bufferDesc.ByteWidth = sizeof(uint32_t) * PADDING * PADDING * 6;
 
 		for (int i = 0; i < INDEX_BUFFER_DIM; ++i)
 		{
 			for (int j = 0; j < INDEX_BUFFER_DIM; ++j)
 			{
 				vector<uint32_t> indices;
-				const int pointX = j * CHUNK_DIM;
-				const int pointZ = i * CHUNK_DIM;
+				const int pointX = j * PADDING;
+				const int pointZ = i * PADDING;
+				// TODO: Z축 끊김 현상 해결 필요
 
-				for (int z = pointZ; z < pointZ + CHUNK_DIM - 1; ++z)
+				for (int z = pointZ; z < pointZ + PADDING && z < MAP_DIM; ++z)
 				{
-					for (int x = pointX; x < pointX + CHUNK_DIM - 1; ++x)
+					for (int x = pointX; x < pointX + PADDING && x < MAP_DIM; ++x)
 					{
 						int p00 = x + MAP_DIM * z;
 						int p01 = (x + 1) + MAP_DIM * z;
@@ -373,7 +374,7 @@ void Map::updateChunkIndexBuffers(void)
 	{
 		for (int x = minX; x < maxX; ++x)
 		{
-			size_t indexCount = (CHUNK_DIM - 1) * (CHUNK_DIM - 1) * 6;
+			size_t indexCount = (CHUNK_DIM) * (CHUNK_DIM) * 6;
 
 			ctx->IASetIndexBuffer(mIndexBuffers[x + INDEX_BUFFER_DIM * z], DXGI_FORMAT_R32_UINT, 0);
 			ctx->DrawIndexed(static_cast<UINT>(indexCount), 0, 0);

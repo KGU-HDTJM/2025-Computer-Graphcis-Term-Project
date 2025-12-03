@@ -1,10 +1,10 @@
 #pragma once
 
 #include "D3D11Base.h"
-#include "define.h"
+
 
 class Sphere;
-class InstancedSphere;
+class InstancedSphereSet;
 class SphereGenerator
 {
 
@@ -12,7 +12,8 @@ public:
 	SphereGenerator(D3D11Base* base);
 	~SphereGenerator();
 	Sphere* CreateSphere(float radius, const XMFLOAT4& pos) const;
-	InstancedSphere* CreateInstancedSphere(UINT count);
+	InstancedSphereSet* CreateInstancedSphere(UINT count);
+	
 	
 	ID3D11VertexShader* GetVertexShader(void) const;
 	ID3D11HullShader* GetHullShader(void) const ;
@@ -26,7 +27,8 @@ private:
 	ID3D11Buffer* createVertexBuffer(UINT& count) const;
 	ID3D11Buffer* createIndexBuffer(UINT& count) const;
 	void initConstantBuffer();
-	vector<InstanceData>* createInstanceData(UINT count) const;
+	ID3D11InputLayout* createInstanceLayout(void);
+	
 	
 private:
 	D3D11Base* mBase;
@@ -38,5 +40,6 @@ private:
 	ID3D11DomainShader* mDomainShader;
 	ID3D11PixelShader* mPixelShader;
 	ID3D11Buffer* mTessellationBuffer;
+	ID3D11InputLayout* mInputLayout;
 };
 

@@ -76,6 +76,11 @@ Sphere* SphereGenerator::CreateSphere(float radius, const XMFLOAT4& pos) const
 	return res;	
 }
 
+InstancedSphereSet* SphereGenerator::CreateInstancedSphere(UINT count)
+{
+	return nullptr;
+}
+
 ID3D11VertexShader* SphereGenerator::GetVertexShader(void) const
 {
 	return mVertexShader;

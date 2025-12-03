@@ -3,6 +3,8 @@
 
 using namespace DirectX;
 
+#define FAR_DISTANCE (500.F)
+
 struct Vertex
 {
 	XMFLOAT4 Position;

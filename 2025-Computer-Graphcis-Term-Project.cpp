@@ -360,8 +360,9 @@ bool Init(void)
 		XMFLOAT4(0.F, 20.F, -40.F, 1.0F), 
 		XMFLOAT4(0.F, 0.F, 0.F, 0.F), 
 		XMFLOAT4(0.F, 1.F, 0.F, 0.F));
-	MainCamera->Sensitivity.x = 100.0F;
-	MainCamera->Sensitivity.y = 100.0F;
+	MainCamera->Sensitivity.x = 15.0F;
+	MainCamera->Sensitivity.y = 15.0F;
+	MainCamera->MovingSpeed = 50.F;
 	RECT rect;
 	GetWindowRect(g_hWnd, &rect);
 	WinInfo.Width = rect.right - rect.left;
@@ -413,7 +414,14 @@ void Update(void)
 		yDelta = static_cast<float>(MousePos.Y - WinInfo.Center.y);
 		yDelta /= WinInfo.Height;
 	}
+	XMFLOAT4 posBak = MainCamera->GetPosition();
 	MainCamera->Update(moveVec, xDelta * deltaTime, -yDelta * deltaTime);
+	XMFLOAT4 currentPos = MainCamera->GetPosition();
+	XMVECTOR len = XMVector3Length(XMLoadFloat4(&currentPos));
+	if (len.m128_f32[0] > pMap->MAP_DIM / 2)
+	{
+		MainCamera->SetPosition(posBak);
+	}
 }
 
 void Render(void)

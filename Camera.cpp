@@ -21,6 +21,7 @@ Camera::Camera(const XMFLOAT4& eye, const XMFLOAT4& look, const XMFLOAT4& up)
 	mViewVector.w = 0.F;
 	mUp = up;
 	Sensitivity = XMFLOAT2(1.0F, 1.0F);
+	MovingSpeed = 10.F;
 	Update(XMFLOAT4(0, 0, 0, 0), 0, 0);
 }
 
@@ -57,6 +58,7 @@ void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 	// move = XMVectorMultiplyAdd(yyy0, XMVECTOR{ 0.F, 1.F, 0.F, 0.F }, move);
 	move = XMVectorMultiplyAdd(zzz0, forwardMove, move);
 	// move = XMVectorMultiplyAdd(zzz0, XMVector3Cross(right, XMVECTOR{ 0.F, 1.F, 0.F, 0.F }), move);
+	move = move * MovingSpeed;
 	pos = XMVectorAdd(pos, move);
 
 	XMVECTOR focus = XMVectorAdd(pos, forward);
@@ -75,6 +77,11 @@ XMMATRIX Camera::GetViewMatrix(void) const
 const XMFLOAT4& Camera::GetPosition() const
 {
 	return mPosition;
+}
+
+void Camera::SetPosition(const XMFLOAT4& pos)
+{
+	mPosition = pos;
 }
 
 const XMFLOAT4& Camera::GetViewVector() const

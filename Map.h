@@ -65,15 +65,15 @@ private:
 
 	void updateVertexBuffer(const eastl::vector<Vertex>& newPerlin, const int& x, const int& z);
 	void updateChunkIndexBuffers(void);
-
-private:
-	const char* MAIN_SEED_FILE = "perlin.seed.bin";
-
+public:
 	const int MAP_DIM = 1000;
 	const int CHUNK_DIM = 100;
 	const int TERRAIN_COUNT = 4;
 	const int INDEX_BUFFER_DIM = MAP_DIM / CHUNK_DIM;
+private:
+	const char* MAIN_SEED_FILE = "perlin.seed.bin";
 
+	
 
 	XMFLOAT4 mCamPos;
 
