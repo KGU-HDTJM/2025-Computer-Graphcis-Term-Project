@@ -93,8 +93,6 @@ bool Map::loadMeshData(void)
 	srand(mainSeed);
 
 	mVertices = createVertex(MAP_DIM, MAP_DIM, 1);
-	createIndex(MAP_DIM, MAP_DIM);
-
 
 	float scale[] = { 1, 13, 5, 9 };
 	const int PICH_DIM = (MAP_DIM / (TERRAIN_COUNT / 2));
@@ -112,6 +110,9 @@ bool Map::loadMeshData(void)
 			updateVertexBuffer(newLayer, x, z);
 		}
 	}
+
+	accumulateFaceNormalsAndIndices(MAP_DIM, MAP_DIM);
+	normalizeVertexNormal();
 
 	return true;
 }
@@ -215,7 +216,7 @@ vector<Vertex> Map::createVertex(const int& x, const int& z, const float& scale)
 	return vertices;
 }
 
-void Map::createIndex(const int& x, const int& y)
+void Map::accumulateFaceNormalsAndIndices(const int& x, const int& y)
 {
 
 	const int GRID_WIDTH  = x;
@@ -230,14 +231,68 @@ void Map::createIndex(const int& x, const int& y)
 			int p10 = i + GRID_WIDTH * (j + 1);
 			int p11 = i + 1 + GRID_WIDTH * (j + 1);
 
+			XMVECTOR v00 = XMLoadFloat4(&mVertices[p00].Position);
+			XMVECTOR v01 = XMLoadFloat4(&mVertices[p01].Position);
+			XMVECTOR v10 = XMLoadFloat4(&mVertices[p10].Position);
+			XMVECTOR v11 = XMLoadFloat4(&mVertices[p11].Position);
+
+			XMVECTOR n00 = XMLoadFloat4(&mVertices[p00].Normal);
+			XMVECTOR n01 = XMLoadFloat4(&mVertices[p01].Normal);
+			XMVECTOR n10 = XMLoadFloat4(&mVertices[p10].Normal);
+			XMVECTOR n11 = XMLoadFloat4(&mVertices[p11].Normal);
+
 			mIndices.push_back(static_cast<uint32_t>(p00));
 			mIndices.push_back(static_cast<uint32_t>(p11));
 			mIndices.push_back(static_cast<uint32_t>(p01));
+			
+			XMVECTOR s1 = v11 - v00;
+			XMVECTOR s2 = v01 - v11;
+			XMVECTOR n = XMVector3Cross(s1, s2);
+
+			n00 = n00 + n;
+			n01 = n01 + n;
+			n11 = n11 + n;
 
 			mIndices.push_back(static_cast<uint32_t>(p00));
 			mIndices.push_back(static_cast<uint32_t>(p10));
 			mIndices.push_back(static_cast<uint32_t>(p11));
+
+			XMVECTOR s3 = v10 - v00;
+			XMVECTOR s4 = v11 - v10;
+			XMVECTOR n1 = XMVector3Cross(s3, s4);
+
+			n00 = n00 + n1;
+			n10 = n10 + n1;
+			n11 = n11 + n1;
+			
+			XMFLOAT4 nf00, nf01, nf10, nf11;
+			XMStoreFloat4(&nf00, n00); nf00.w = 0.0f;
+			XMStoreFloat4(&nf01, n01); nf01.w = 0.0f;
+			XMStoreFloat4(&nf10, n10); nf10.w = 0.0f;
+			XMStoreFloat4(&nf11, n11); nf11.w = 0.0f;
+
+			mVertices[p00].Normal = nf00;
+			mVertices[p01].Normal = nf01;
+			mVertices[p10].Normal = nf10;
+			mVertices[p11].Normal = nf11;
 		}
+	}
+}
+
+void Map::normalizeVertexNormal(void)
+{
+	const int VERTEX_LENGTH = mVertices.size();
+
+	for (int i = 0; i < VERTEX_LENGTH; ++i)
+	{
+		XMVECTOR vec = XMLoadFloat4(&mVertices[i].Normal);
+		XMVECTOR n = XMVector3Normalize(vec);
+		XMFLOAT4 nf;
+
+		XMStoreFloat4(&nf, n);
+		nf.w = 0.0f;
+
+		mVertices[i].Normal = nf;
 	}
 }
 
