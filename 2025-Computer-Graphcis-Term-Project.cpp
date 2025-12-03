@@ -427,10 +427,10 @@ void Update(void)
 	MainCamera->Update(moveVec, xDelta * deltaTime, -yDelta * deltaTime);
 	XMFLOAT4 currentPos = MainCamera->GetPosition();
 	XMVECTOR len = XMVector3Length(XMLoadFloat4(&currentPos));
-	if (len.m128_f32[0] > pMap->MAP_DIM)
+	/*if (len.m128_f32[0] > pMap->MAP_DIM * 2)
 	{
 		MainCamera->SetPosition(posBak);
-	}
+	}*/
 }
 
 void Render(void)
