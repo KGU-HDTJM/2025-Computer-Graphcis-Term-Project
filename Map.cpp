@@ -94,9 +94,7 @@ bool Map::loadMeshData(void)
 
 	mVertices = createVertex(MAP_DIM, MAP_DIM, 1);
 
-	float scale[] = { 1, 13, 5, 9 };
 	float scale[] = { 1, 25, 35, 9 };
-	float scale[] = { 1, 13, 5, 9 };
 	const int PICH_DIM = (MAP_DIM / (TERRAIN_COUNT / 2));
 
 	for (int i = 0; i < TERRAIN_COUNT / 2; ++i)
