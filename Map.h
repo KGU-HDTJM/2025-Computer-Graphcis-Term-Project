@@ -21,8 +21,9 @@ class Map
 {
 public:
 
-	Map(void) : mBase(nullptr), mIndexBuffer(nullptr), mVertexBuffer(nullptr)
+	Map(void) : mBase(nullptr), mVertexBuffer(nullptr)
 	{
+		mIndexBuffers = eastl::vector<ID3D11Buffer*>();
 		mVertices = eastl::vector<Vertex>();
 		mIndices = eastl::vector<uint32_t>();
 		mCamPos = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -44,15 +45,13 @@ public:
 	~Map()
 	{
 		if (mVertexBuffer) { mVertexBuffer->Release(); }
-		if (mIndexBuffer) { mIndexBuffer->Release();   }
+		for (auto i = mIndexBuffers.begin(); i != mIndexBuffers.end(); ++i)
+		{
+			(*i)->Release();
+		}
 	}
 
 	void Draw(void);
-
-	size_t GetIndexCount(void);
-	ID3D11Buffer* GetIndexBuffer(void);
-	ID3D11Buffer* GetVertexBuffer(void);
-	size_t GetVertexSize(void) const;
 	void UpdateCameraPos(const XMFLOAT4& pos);
 
 private:
@@ -63,20 +62,22 @@ private:
 
 	void createIndex(const int& x, const int& z);
 	bool createBuffers(void);
-	
 	void updateVertexBuffer(const eastl::vector<Vertex>& newPerlin);
-	void updateIndexBuffer(void);
+	void updateChunkIndexBuffers(void);
 
 private:
-	
 	const char* MAIN_SEED_FILE = "perlin.seed.bin";
-	
+
+	const int MAP_DIM = 1000;
+	const int CHUNK_DIM = 100;
+	const int INDEX_BUFFER_DIM = MAP_DIM / CHUNK_DIM;
+
 	XMFLOAT4 mCamPos;
 
 	D3D11Base* mBase = nullptr;
 	eastl::vector<uint32_t> mIndices;
 	eastl::vector<Vertex> mVertices;
 
-	ID3D11Buffer* mIndexBuffer  = nullptr;
 	ID3D11Buffer* mVertexBuffer = nullptr;
+	eastl::vector<ID3D11Buffer*> mIndexBuffers;
 };

@@ -28,26 +28,6 @@ inline float fade(float t)
 
 
 
-size_t Map::GetIndexCount(void)
-{
-	return mIndices.size();
-}
-
-ID3D11Buffer* Map::GetIndexBuffer(void)
-{
-	return mIndexBuffer;
-}
-
-ID3D11Buffer* Map::GetVertexBuffer(void)
-{
-	return mVertexBuffer;
-}
-
-size_t Map::GetVertexSize(void) const 
-{
-	return sizeof(Vertex);
-}
-
 void Map::UpdateCameraPos(const XMFLOAT4& pos)
 {
 	mCamPos = pos;
@@ -57,8 +37,6 @@ void Map::UpdateCameraPos(const XMFLOAT4& pos)
 
 void Map::Draw(void)
 {
-	updateIndexBuffer();
-
 	ID3D11Buffer* cbWorld	 = mBase->GetCBObjectBuffer();   // World
 	ID3D11Buffer* cbView	 = mBase->GetCBFrameBuffer();    // View
 	ID3D11Buffer* cbProj	 = mBase->GetCBResizeBuffer(); // Projection
@@ -89,11 +67,10 @@ void Map::Draw(void)
 	UINT offset = 0;
 	ctx->IASetInputLayout(mBase->GetInputLayout());
 	ctx->IASetVertexBuffers(0, 1, &mVertexBuffer, &stride, &offset);
-	ctx->IASetIndexBuffer(mIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	
 	ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	// Draw
-	ctx->DrawIndexed(static_cast<UINT>(mIndices.size()), 0, 0);
+	updateChunkIndexBuffers();
 }
 
 
@@ -121,7 +98,8 @@ bool Map::loadMeshData(void)
 
 	srand(mainSeed);
 
-	mVertices = createVertex(200, 200, 1);
+	mVertices = createVertex(MAP_DIM, MAP_DIM, 1);
+	createIndex(MAP_DIM, MAP_DIM);
 
 	return true;
 }
@@ -278,85 +256,64 @@ bool Map::createBuffers(void)
 		goto LB_FAILED_CREATE_VERTEX_BUFFER;
 	} 
 
-	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	bufferDesc.ByteWidth = (UINT)(sizeof(uint32_t) * MAX_INDEX_BUFFER_SIZE);
-	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-
-	//initData.pSysMem = mIndices.data();
-
-	hr = dev->CreateBuffer(&bufferDesc, nullptr, &mIndexBuffer);
-	if (FAILED(hr))
 	{
-		goto LB_FAILED_CREATE_INDEX_BUFFER;
+		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+		bufferDesc.ByteWidth = sizeof(uint32_t) * CHUNK_DIM * CHUNK_DIM * 6;
+
+		for (int i = 0; i < INDEX_BUFFER_DIM; ++i)
+		{
+			for (int j = 0; j < INDEX_BUFFER_DIM; ++j)
+			{
+				vector<uint32_t> indices;
+				const int pointX = j * CHUNK_DIM;
+				const int pointZ = i * CHUNK_DIM;
+
+				for (int z = pointZ; z < pointZ + CHUNK_DIM - 1; ++z)
+				{
+					for (int x = pointX; x < pointX + CHUNK_DIM - 1; ++x)
+					{
+						int p00 = x + MAP_DIM * z;
+						int p01 = (x + 1) + MAP_DIM * z;
+						int p10 = x + MAP_DIM * (z + 1);
+						int p11 = (x + 1) + MAP_DIM * (z + 1);
+						
+						indices.push_back(p00);
+						indices.push_back(p11);
+						indices.push_back(p01);
+
+						indices.push_back(p00);
+						indices.push_back(p10);
+						indices.push_back(p11);
+					}
+				}
+
+				bufferDesc.ByteWidth = sizeof(uint32_t) * indices.size();
+				initData.pSysMem = indices.data();
+
+				ID3D11Buffer* indexBuffer = nullptr;
+				hr = dev->CreateBuffer(&bufferDesc, &initData, &indexBuffer);
+				if (FAILED(hr))
+				{
+					goto LB_FAILED_CREATE_INDEX_BUFFER;
+				}
+				mIndexBuffers.push_back(indexBuffer);
+			}
+		}
 	}
 
 	return true;
 
 LB_FAILED_CREATE_INDEX_BUFFER:
+
+	for (auto i = mIndexBuffers.begin(); i != mIndexBuffers.end(); ++i)
+	{
+		(*i)->Release();
+	}
 	mVertexBuffer->Release();
+
 LB_FAILED_CREATE_VERTEX_BUFFER:
 
 	return false;
-}
-
-
-void Map::updateIndexBuffer(void)
-{
-	mIndices.clear();
-
-	const int CHUNK_SIZE = 40;
-	const int EXTEND_SIZE = 4;
-	
-	const int MAP_SIZE = 400;
-	const int HALF_MAP_SIZE = 200;
-	
-	const int INDEX_PER_TRIANGLE = 6;
-
-	float camfX = (mCamPos.x + HALF_MAP_SIZE) / static_cast<float>(EXTEND_SIZE);
-	float camfZ = (mCamPos.z + HALF_MAP_SIZE) / static_cast<float>(EXTEND_SIZE);
-
-	int camX = static_cast<int>(camfX);
-	int camZ = static_cast<int>(camfZ);
-
-	if (camX < -HALF_MAP_SIZE || camX > HALF_MAP_SIZE ||
-		camZ < -HALF_MAP_SIZE || camZ > HALF_MAP_SIZE)
-	{
-		return;
-	}
-
-	int maxX = (camX + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE : camX + CHUNK_SIZE;
-	int maxZ = (camZ + CHUNK_SIZE * 2) >= HALF_MAP_SIZE ? HALF_MAP_SIZE - CHUNK_SIZE - 1: camZ + CHUNK_SIZE - 1;
-	int minX = (camX - CHUNK_SIZE) < -HALF_MAP_SIZE ? -HALF_MAP_SIZE : camX - CHUNK_SIZE;
-	int minZ = (camZ - CHUNK_SIZE) < -HALF_MAP_SIZE ? -HALF_MAP_SIZE : camZ - CHUNK_SIZE;
-
-	for (int z = minZ; z < maxZ; ++z)
-	{
-		for (int x = minX; x < maxX; ++x)
-		{
-			int p00 = x + MAP_SIZE * z;
-			int p01 = (x + 1) + MAP_SIZE * z;
-			int p10 = x + MAP_SIZE * (z + 1);
-			int p11 = (x + 1) + MAP_SIZE * (z + 1);
-
-			mIndices.push_back(static_cast<uint32_t>(p00));
-			mIndices.push_back(static_cast<uint32_t>(p11));
-			mIndices.push_back(static_cast<uint32_t>(p01));
-
-			mIndices.push_back(static_cast<uint32_t>(p00));
-			mIndices.push_back(static_cast<uint32_t>(p10));
-			mIndices.push_back(static_cast<uint32_t>(p11));
-		}
-	}
-
-	HRESULT hr;
-
-	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
-
-	D3D11_MAPPED_SUBRESOURCE initData;
-	ctx->Map(mIndexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &initData);
-	memcpy(initData.pData, mIndices.data(), sizeof(uint32_t) * mIndices.size());
-	ctx->Unmap(mIndexBuffer, 0);
 }
 
 
@@ -384,4 +341,36 @@ void Map::updateVertexBuffer(const vector<Vertex>& newPerlin)
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
 	ctx->UpdateSubresource(mVertexBuffer, 0, nullptr, mVertices.data(), 0, 0);
+}
+
+void Map::updateChunkIndexBuffers(void)
+{
+	const int EXTEND_DIM = 4;
+	const int COORD_OFFSET = MAP_DIM / 2;
+
+	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
+
+
+	int camX = static_cast<int>((mCamPos.x + COORD_OFFSET) / (float)EXTEND_DIM) / CHUNK_DIM;
+	int camZ = static_cast<int>((mCamPos.z + COORD_OFFSET) / (float)EXTEND_DIM) / CHUNK_DIM;
+
+	if (camX < 0 || camX >= INDEX_BUFFER_DIM || camZ < 0 || camZ >= INDEX_BUFFER_DIM)
+		return;
+
+	int minX = std::max(0, camX - 1);
+	int maxX = std::min(INDEX_BUFFER_DIM - 1, camX + 1);
+	int minZ = std::max(0, camZ - 1);
+	int maxZ = std::min(INDEX_BUFFER_DIM - 1, camZ + 1);
+
+
+	for (int z = minZ; z < maxZ; ++z)
+	{
+		for (int x = minX; x < maxX; ++x)
+		{
+			size_t indexCount = (CHUNK_DIM - 1) * (CHUNK_DIM - 1) * 6;
+
+			ctx->IASetIndexBuffer(mIndexBuffers[x + INDEX_BUFFER_DIM * z], DXGI_FORMAT_R32_UINT, 0);
+			ctx->DrawIndexed(static_cast<UINT>(indexCount), 0, 0);
+		}
+	}
 }
