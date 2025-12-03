@@ -1,10 +1,11 @@
 #include "sphere.common.hlsli"
+cbuffer TimeCB : register(b4)
+{
+    float DeltaTime;
+    float3 TimeCBPadding;
+};
 
 struct InstanceData
 {
     float4x4 World;
-    float2 TexCoord;
-    float2 Padding;
-    float Radius;
-    float3 Velocity;
 };

@@ -36,10 +36,25 @@ struct TessellationCB
 
 struct InstanceData
 {
-	CBObject BaseCB;
-	
-	XMFLOAT2 TexCoord;
-	XMFLOAT2 _Padding;
+	XMFLOAT4X4 World;
+};
+
+struct ComputeBuf
+{
+	XMFLOAT4 Velocity;
+	XMFLOAT4 Position;
 	float Radius;
-	XMFLOAT3 Velocity;
+	XMFLOAT4 Padding;
+};
+
+struct InstanceObject
+{
+	InstanceData* InstData;
+	ComputeBuf* ComputeData;
+};
+
+struct CBTime
+{
+	float DeltaTime;
+	XMFLOAT3 TimeCBPadding;
 };

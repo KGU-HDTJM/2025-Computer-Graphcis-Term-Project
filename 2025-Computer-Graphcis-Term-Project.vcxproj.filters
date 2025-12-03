@@ -119,6 +119,18 @@
     <FxCompile Include="default.ps.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="instanced_sphere.vs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="instanced_sphere.hs.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="instanced_sphere.ds.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="instanced_sphere.ps.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
     <FxCompile Include="instanced_sphere.cs.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>

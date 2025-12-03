@@ -48,7 +48,7 @@ void Map::Draw(void)
 
 
 	ctx->UpdateSubresource(cbWorld, 0, nullptr, &cbObj, 0, 0);
-
+	ctx->IASetInputLayout(mBase->GetInputLayout());
 	ctx->VSSetShader(mBase->GetVertexShader(eShaderID::Basic), nullptr, 0);
 	ctx->PSSetShader(mBase->GetPixelShader(eShaderID::Basic), nullptr, 0);
 

@@ -1,10 +1,14 @@
-#include "sphere.common.hlsli"
+#include "instanced_sphere.common.hlsli"
 
 struct HS_INPUT
 {
     float4 Position : SV_POSITION;
     float4 Normal : NORMAL;
     float2 TexCoord : TEXCOORD0;
+    float4 World0 : TEXCOORD1;
+    float4 World1 : TEXCOORD2;
+    float4 World2 : TEXCOORD3;
+    float4 World3 : TEXCOORD4;
 };
 
 struct HS_CONSTANT_DATA_OUTPUT
@@ -15,9 +19,13 @@ struct HS_CONSTANT_DATA_OUTPUT
 
 struct HS_CONTROL_POINT_OUTPUT
 {
-    float3 Position : POSITION;
-    float3 Normal : NORMAL;
+    float4 Position : POSITION;
+    float4 Normal : NORMAL;
     float2 TexCoord : TEXCOORD0;
+    float4 World0 : TEXCOORD1;
+    float4 World1 : TEXCOORD2;
+    float4 World2 : TEXCOORD3;
+    float4 World3 : TEXCOORD4;
 };
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
 [domain("tri")]
@@ -31,6 +39,12 @@ HS_CONTROL_POINT_OUTPUT main(InputPatch<HS_INPUT, 3> patch, uint i : SV_OutputCo
     output.Position = patch[i].Position;
     output.Normal = patch[i].Normal;
     output.TexCoord = patch[i].TexCoord;
+    
+    output.World0 = patch[i].World0;
+    output.World1 = patch[i].World1;
+    output.World2 = patch[i].World2;
+    output.World3 = patch[i].World3;
+    
     return output;
 }
 

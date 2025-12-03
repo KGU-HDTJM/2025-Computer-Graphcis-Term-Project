@@ -12,8 +12,10 @@
 
 #include"D3D11Base.h"
 
-#include "Sphere.h"
+
 #include "SphereGenerator.h"
+#include "Sphere.h"
+#include "InstancedSphereSet.h"
 #include "Camera.h"
 #include "Map.h"
 #include "Timer.h"
@@ -38,9 +40,13 @@ Timer* GameTimer;
 ColorTextureMap* ColorTexture;
 XMFLOAT4 LightPosBak;
 bool bShouldUpdateLightPos;
+InstancedSphereSet* pInstancedSpheres;
+bool bShouldMoveSphere;
+size_t InstIdx;
 
 // moving
-struct MoveFactor {
+struct MoveFactor 
+{
 	float Forward;
 	float Left;
 	float Backward;
@@ -51,12 +57,14 @@ struct MoveFactor {
 
 bool bFixMousePos;
 
-struct Position {
+struct Position 
+{
 	int X;
 	int Y;
 } MousePos;
 
-struct RectInfo {
+struct RectInfo 
+{
 	Position Pos;
 	POINT Center;
 	UINT Width;
@@ -282,10 +290,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			bShouldUpdateLightPos = !bShouldUpdateLightPos;
 		}
 		break;
-
-		//TODO: when r button is pressed, boolean will changed to false then do not update light position
-		//		after boolean became true, move light position to camera position
-
+		case 'E':
+		case 'e':
+		{
+			bShouldMoveSphere = true;
+		}
+		break;
 
 		default:
 			break;
@@ -364,6 +374,9 @@ bool Init(void)
 	pSPGen = new SphereGenerator(Base);
 
 	pSphere = pSPGen->CreateSphere(15.F, XMFLOAT4(30.F, 0.F, 0.F, 1.F));
+	pInstancedSpheres = pSPGen->CreateSphereSet(15.F, XMFLOAT4(0.F, 0.F, 0.F, 0.F), 1000);
+	bShouldMoveSphere = 0;
+	InstIdx = 0;
 	MainCamera = new Camera(
 		XMFLOAT4(0.F, 20.F, -40.F, 1.0F),
 		XMFLOAT4(0.F, 0.F, 0.F, 0.F),
@@ -431,6 +444,34 @@ void Update(void)
 	{
 		MainCamera->SetPosition(posBak);
 	}
+	if (bShouldMoveSphere) 
+	{
+		bShouldMoveSphere = false;
+		InstanceObject instObj = pInstancedSpheres->GetInstanceObject(InstIdx);
+		++InstIdx;
+		XMFLOAT4 camPos = MainCamera->GetPosition();
+		XMFLOAT4 camForward = MainCamera->GetViewVector();
+		XMVECTOR newPos = XMLoadFloat4(&camPos) + (XMLoadFloat4(&camForward) * 15.F);
+		XMStoreFloat4(&instObj.ComputeData->Position, newPos);
+	}
+	pInstancedSpheres->Update(deltaTime);
+
+	ID3D11DeviceContext* immediateContext = Base->GetImmediateContext();
+	ID3D11Buffer* frameCBBuffer = Base->GetCBFrameBuffer();
+	CBFrame cbFrame;
+	XMStoreFloat4x4(&cbFrame.View, XMMatrixTranspose(MainCamera->GetViewMatrix()));
+
+	if (bShouldUpdateLightPos)
+	{
+		LightPosBak = MainCamera->GetPosition();
+		pSphere->SetPosition(LightPosBak);
+	}
+	cbFrame.LightPos = LightPosBak;
+	cbFrame.LightCL = XMFLOAT4(1.0F, 1.0F, 1.0F, 1.0F); // change lumen and colors
+	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
+
+	pMap->UpdateCameraPos(MainCamera->GetPosition());
+	
 }
 
 void Render(void)
@@ -447,26 +488,12 @@ void Render(void)
 	immediateContext->ClearRenderTargetView(Base->GetRenderTargetView(), BG_COLOR);
 	immediateContext->ClearDepthStencilView(Base->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0F, 0);
 
-	immediateContext->IASetInputLayout(Base->GetInputLayout());
-	CBFrame cbFrame;
-	XMStoreFloat4x4(&cbFrame.View, XMMatrixTranspose(MainCamera->GetViewMatrix()));
-
-	if (bShouldUpdateLightPos)
-	{
-		LightPosBak = MainCamera->GetPosition();
-		pSphere->SetPosition(LightPosBak);
-	}
-	cbFrame.LightPos = LightPosBak;
-	cbFrame.LightCL = XMFLOAT4(1.0F, 1.0F, 1.0F, 1.0F); // change lumen and colors
-	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
-
-	pMap->UpdateCameraPos(MainCamera->GetPosition());
-
 	ID3D11ShaderResourceView* srv = ColorTexture->GetHSVShaderRV();
 	immediateContext->PSSetShaderResources(0, 1, &srv);
 	ID3D11SamplerState* samplerLinear = ColorTexture->GetSamplerLinear();
 	immediateContext->PSSetSamplers(0, 1, &samplerLinear);
 	pSphere->Draw();
+	pInstancedSpheres->Draw();
 	pMap->Draw();
 
 	swapChain->Present(0, 0);
@@ -474,11 +501,12 @@ void Render(void)
 
 void Shutdown(void)
 {
-	delete pMap;
+	// delete pMap;
 	delete GameTimer;
-	delete ColorTexture;
+	delete pInstancedSpheres;
 	delete pSphere;
 	delete pSPGen;
+	delete ColorTexture;
 	Base->Cleanup();
 	delete Base;
 }

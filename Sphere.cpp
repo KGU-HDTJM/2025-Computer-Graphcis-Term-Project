@@ -21,7 +21,7 @@ void Sphere::Draw(void)
 	ID3D11Buffer* indexBuffer = mGenerator->GetIndexBuffer(indexCount);
 
 	ctx->UpdateSubresource(cbWorld, 0, nullptr, &mCBObject, 0, 0);
-
+	ctx->IASetInputLayout(mBase->GetInputLayout());
 	// Set shaders
 	ctx->VSSetShader(mGenerator->GetVertexShader(), nullptr, 0);
 

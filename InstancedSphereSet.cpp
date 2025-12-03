@@ -1,2 +1,111 @@
 #include "InstancedSphereSet.h"
 
+void InstancedSphereSet::Update(float deltaTime)
+{
+	for (size_t i = 0; i < mInstCount; ++i)
+	{
+		ComputeBuf& computeData = mComputeData->at(i);
+
+		// Update position using velocity
+		XMVECTOR pos = XMLoadFloat4(&computeData.Position);
+		XMVECTOR vel = XMLoadFloat4(&computeData.Velocity);
+		vel = vel * deltaTime;
+		
+		if (XMVector3Length(pos + vel).m128_f32[0] < 1000.F)
+		{
+			XMStoreFloat4(&computeData.Position, pos + vel);
+		}
+		else
+		{
+			XMStoreFloat4(&computeData.Position, pos);
+			XMStoreFloat4(&computeData.Velocity, -vel);
+		}
+
+		// Optional: apply bounds or wrap-around logic
+		if (computeData.Position.y < 0.0f) computeData.Position.y = 0.0f;
+
+		(*mComputeData)[i] = computeData;
+
+		// Build world matrix for rendering
+		XMMATRIX scale = XMMatrixScaling(computeData.Radius, computeData.Radius, computeData.Radius);
+		XMMATRIX translate = XMMatrixTranslation(computeData.Position.x, computeData.Position.y, computeData.Position.z);
+		XMMATRIX world = scale * translate;
+
+		XMStoreFloat4x4(&mInstData->at(i).World, world);
+	}
+	// TODO: update InstBuffer
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+
+	// Map the buffer for writing
+	HRESULT hr = mBase->GetImmediateContext()->Map(mInstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	if (SUCCEEDED(hr))
+	{
+		// Copy new instance data into the buffer
+		memcpy(mappedResource.pData, mInstData->data(), sizeof(InstanceData) * mInstData->size());
+
+		// Unmap after writing
+		mBase->GetImmediateContext()->Unmap(mInstBuffer, 0);
+	}
+}
+
+InstancedSphereSet::~InstancedSphereSet(void)
+{
+	mInstBuffer->Release();
+	mCSBuffer->Release();
+}
+
+void InstancedSphereSet::Draw(void)
+{
+	ID3D11DeviceContext* context = mBase->GetImmediateContext();
+	
+	ID3D11Buffer* cbObj = mBase->GetCBObjectBuffer();
+	ID3D11Buffer* cbFrame = mBase->GetCBFrameBuffer();
+	ID3D11Buffer* cbResize = mBase->GetCBResizeBuffer();
+
+	UINT strides[2] = { sizeof(Vertex), sizeof(InstanceData) };
+	UINT offsets[2] = { 0, 0 };
+	ID3D11Buffer* buffers[2] = { mGenerator->GetVertexBuffer(), mInstBuffer};
+	UINT indexCount;
+	context->IASetInputLayout(mGenerator->GetInstInputLayout());
+	context->IASetVertexBuffers(0, 2, buffers, strides, offsets);
+	context->IASetIndexBuffer(mGenerator->GetIndexBuffer(indexCount), DXGI_FORMAT_R32_UINT, 0);
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// Set shaders
+	context->VSSetShader(mGenerator->GetInstVertexShader(), nullptr, 0);
+	//context->VSSetConstantBuffers(0, 1, &cbObj);
+	context->VSSetConstantBuffers(1, 1, &cbFrame);
+	context->VSSetConstantBuffers(2, 1, &cbResize);
+
+	context->HSSetShader(mGenerator->GetInstHullShader(), nullptr, 0);
+	
+	ID3D11Buffer* tessFactor = mGenerator->GetTessellationBuffer();
+	context->HSSetConstantBuffers(3, 1, &tessFactor);
+
+	context->DSSetShader(mGenerator->GetInstDomainShader(), nullptr, 0);
+	//context->DSSetConstantBuffers(0, 1, &cbObj);
+	context->DSSetConstantBuffers(1, 1, &cbFrame);
+	context->DSSetConstantBuffers(2, 1, &cbResize);
+
+	context->PSSetShader(mGenerator->GetInstPixelShader(), nullptr, 0);
+	//context->PSSetConstantBuffers(0, 1, &cbObj);
+	context->PSSetConstantBuffers(1, 1, &cbFrame);
+	context->PSSetConstantBuffers(2, 1, &cbResize);
+
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
+	// Draw instanced
+	context->DrawIndexedInstanced(indexCount, mInstCount, 0, 0, 0);
+	context->HSSetShader(nullptr, nullptr, 0);
+	context->DSSetShader(nullptr, nullptr, 0);
+}
+
+InstanceObject InstancedSphereSet::GetInstanceObject(int idx)
+{
+	// TODO: insert return statement here
+	InstanceObject res;
+
+	res.ComputeData = mComputeData->data() + idx;
+	res.InstData = mInstData->data() + idx;
+
+	return res;
+}
