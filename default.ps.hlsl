@@ -3,8 +3,9 @@
 float4 main(VS_OUTPUT input) : SV_TARGET
 {
     float3 lightDir = normalize(LightPos.xyz - input.WorldPos);
-    float4 color = float4(0.5f, 0.5f, 0.5f, 1.0f);
-    float diffuse = saturate(dot(input.Normal, lightDir));
-    
-    return color * diffuse;
+    float3 color = LightCL.xyz;
+    float diffuse0 = saturate(dot(input.Normal, lightDir));
+    float diffuse1 = saturate(dot(lightDir, float3(0, 1.F, 0.F)));
+    float diffuse = (diffuse0 + diffuse1) / 2;
+    return float4(color * diffuse * LightCL.w, 1.0F);
 }

@@ -56,6 +56,7 @@ void Map::Draw(void)
 	ctx->VSSetConstantBuffers(1, 1, &cbView);  
 	ctx->VSSetConstantBuffers(2, 1, &cbProj);  
 	ctx->PSSetConstantBuffers(0, 1, &cbWorld);
+	ctx->PSSetConstantBuffers(1, 1, &cbView);
 
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
@@ -265,6 +266,12 @@ void Map::accumulateFaceNormalsAndIndices(const int& x, const int& y)
 			n10 = n10 + n1;
 			n11 = n11 + n1;
 			
+			// normalize normals
+			n00 = XMVector3Normalize(n00);
+			n01 = XMVector3Normalize(n01);
+			n10 = XMVector3Normalize(n10);
+			n11 = XMVector3Normalize(n11);
+			
 			XMFLOAT4 nf00, nf01, nf10, nf11;
 			XMStoreFloat4(&nf00, n00); nf00.w = 0.0f;
 			XMStoreFloat4(&nf01, n01); nf01.w = 0.0f;
@@ -334,8 +341,8 @@ bool Map::createBuffers(void)
 			for (int j = 0; j < INDEX_BUFFER_DIM; ++j)
 			{
 				vector<uint32_t> indices;
-				const int pointX = j * PADDING;
-				const int pointZ = i * PADDING;
+				const int pointX = j * (CHUNK_DIM - 1);
+				const int pointZ = i * (CHUNK_DIM - 1);
 				// TODO: Z축 끊김 현상 해결 필요
 
 				for (int z = pointZ; z < pointZ + PADDING && z < MAP_DIM; ++z)

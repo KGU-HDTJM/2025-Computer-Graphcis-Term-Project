@@ -1,10 +1,4 @@
-#include "default.common.hlsli"
-
-cbuffer TessellationCB : register(b3)
-{
-    float TessFactor;
-    float3 Padding;
-};
+#include "sphere.common.hlsli"
 
 struct InstanceData
 {

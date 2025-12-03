@@ -30,12 +30,14 @@ HWND g_hWnd;
 //TODO : put light position with global value
 
 D3D11Base* Base;
-Map* pMap; 
+Map* pMap;
 SphereGenerator* pSPGen;
 Sphere* pSphere;
 Camera* MainCamera;
 Timer* GameTimer;
 ColorTextureMap* ColorTexture;
+XMFLOAT4 LightPosBak;
+bool bShouldUpdateLightPos;
 
 // moving
 struct MoveFactor {
@@ -274,10 +276,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			MovingFactor.Down = 0.0F;
 		}
 		break;
+		case 'R':
+		case 'r':
+		{
+			bShouldUpdateLightPos = !bShouldUpdateLightPos;
+		}
+		break;
 
 		//TODO: when r button is pressed, boolean will changed to false then do not update light position
 		//		after boolean became true, move light position to camera position
-	
+
 
 		default:
 			break;
@@ -348,17 +356,17 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 bool Init(void)
 {
 	Base = new D3D11Base();
-    if (!Base->Initialize(g_hWnd)) {
-        return false;
-    }
-    pMap = new Map(Base);
+	if (!Base->Initialize(g_hWnd)) {
+		return false;
+	}
+	pMap = new Map(Base);
 
 	pSPGen = new SphereGenerator(Base);
 
-	pSphere = pSPGen->CreateSphere(1.5F, XMFLOAT4(30.F, 0.F, 0.F, 1.F));
+	pSphere = pSPGen->CreateSphere(15.F, XMFLOAT4(30.F, 0.F, 0.F, 1.F));
 	MainCamera = new Camera(
-		XMFLOAT4(0.F, 20.F, -40.F, 1.0F), 
-		XMFLOAT4(0.F, 0.F, 0.F, 0.F), 
+		XMFLOAT4(0.F, 20.F, -40.F, 1.0F),
+		XMFLOAT4(0.F, 0.F, 0.F, 0.F),
 		XMFLOAT4(0.F, 1.F, 0.F, 0.F));
 	MainCamera->Sensitivity.x = 15.0F;
 	MainCamera->Sensitivity.y = 15.0F;
@@ -372,7 +380,7 @@ bool Init(void)
 	WinInfo.Center.x = WinInfo.Width / 2 + WinInfo.Pos.X;
 	WinInfo.Center.y = WinInfo.Height / 2 + WinInfo.Pos.Y;
 	ScreenToClient(g_hWnd, &WinInfo.Center);
-	
+
 
 	MovingFactor.Down = 0;
 	MovingFactor.Backward = 0;
@@ -384,6 +392,7 @@ bool Init(void)
 	ColorTexture = new ColorTextureMap(Base->GetDevice());
 
 	GameTimer = new Timer();
+	bShouldUpdateLightPos = true;
 	return true;
 }
 
@@ -395,7 +404,7 @@ void Update(void)
 	moveVec.z = MovingFactor.Forward - MovingFactor.Backward;
 	moveVec.w = 0;
 	float deltaTime = GameTimer->GetDeltaTime();
-	
+
 	XMVECTOR v = XMVector3Normalize(XMLoadFloat4(&moveVec));
 	v = XMVectorScale(v, deltaTime * 10);
 	XMStoreFloat4(&moveVec, v);
@@ -418,7 +427,7 @@ void Update(void)
 	MainCamera->Update(moveVec, xDelta * deltaTime, -yDelta * deltaTime);
 	XMFLOAT4 currentPos = MainCamera->GetPosition();
 	XMVECTOR len = XMVector3Length(XMLoadFloat4(&currentPos));
-	if (len.m128_f32[0] > pMap->MAP_DIM / 2)
+	if (len.m128_f32[0] > pMap->MAP_DIM)
 	{
 		MainCamera->SetPosition(posBak);
 	}
@@ -438,10 +447,16 @@ void Render(void)
 	immediateContext->ClearRenderTargetView(Base->GetRenderTargetView(), BG_COLOR);
 	immediateContext->ClearDepthStencilView(Base->GetDepthStencilView(), D3D11_CLEAR_DEPTH, 1.0F, 0);
 
-    immediateContext->IASetInputLayout(Base->GetInputLayout());
+	immediateContext->IASetInputLayout(Base->GetInputLayout());
 	CBFrame cbFrame;
 	XMStoreFloat4x4(&cbFrame.View, XMMatrixTranspose(MainCamera->GetViewMatrix()));
-	cbFrame.LightPos = MainCamera->GetPosition();
+
+	if (bShouldUpdateLightPos)
+	{
+		LightPosBak = MainCamera->GetPosition();
+		pSphere->SetPosition(LightPosBak);
+	}
+	cbFrame.LightPos = LightPosBak;
 	cbFrame.LightCL = XMFLOAT4(1.0F, 1.0F, 1.0F, 1.0F); // change lumen and colors
 	immediateContext->UpdateSubresource(frameCBBuffer, 0, nullptr, &cbFrame, 0, 0);
 
@@ -451,19 +466,19 @@ void Render(void)
 	immediateContext->PSSetShaderResources(0, 1, &srv);
 	ID3D11SamplerState* samplerLinear = ColorTexture->GetSamplerLinear();
 	immediateContext->PSSetSamplers(0, 1, &samplerLinear);
-    pSphere->Draw();
-    pMap->Draw();
-    
-    swapChain->Present(0, 0);
+	pSphere->Draw();
+	pMap->Draw();
+
+	swapChain->Present(0, 0);
 }
 
 void Shutdown(void)
 {
-    delete pMap;
+	delete pMap;
 	delete GameTimer;
 	delete ColorTexture;
-    delete pSphere;
-    delete pSPGen;
+	delete pSphere;
+	delete pSPGen;
 	Base->Cleanup();
 	delete Base;
 }

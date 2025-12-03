@@ -59,3 +59,11 @@ void Sphere::Draw(void)
 	ctx->HSSetShader(nullptr, nullptr, 0);
 	ctx->DSSetShader(nullptr, nullptr, 0);
 }
+
+void Sphere::SetPosition(const XMFLOAT4& position)
+{
+	mPosition = position;
+	XMMATRIX scale = XMMatrixScaling(mRadius, mRadius, mRadius);
+	XMMATRIX trans = XMMatrixTranslation(mPosition.x, mPosition.y, mPosition.z);
+	XMStoreFloat4x4(&mCBObject.World, XMMatrixTranspose(scale * trans));
+}
