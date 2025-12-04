@@ -24,7 +24,7 @@ void InstancedSphereSet::Update(float deltaTime)
 				ComputeBuf temp = mComputeData->at(j);
 				XMVECTOR diff = XMLoadFloat4(&temp.Position) - pos;
 				float radiusSum = temp.Radius + computeData.Radius;
-				if (XMVector3Dot(diff, diff).m128_f32[0] < radiusSum * radiusSum)
+				if (XMVector3Length(diff).m128_f32[0] < radiusSum)
 				{
 					XMVECTOR cv = XMLoadFloat4(&temp.Velocity);
 

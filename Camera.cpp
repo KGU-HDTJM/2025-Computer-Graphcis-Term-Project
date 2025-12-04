@@ -9,11 +9,11 @@ Camera::Camera(const XMFLOAT4& eye, const XMFLOAT4& look, const XMFLOAT4& up)
 	XMStoreFloat4(&mViewVector, viewVec);
 	mYaw = atan2f(mViewVector.x, mViewVector.z);
 	float setur = mViewVector.y;
-	if (setur > 1.F)
+	if (setur > 1.F - FLT_EPSILON)
 	{
 		setur = 1.F;
 	}
-	if (setur < -1.F)
+	if (setur < -1.F + FLT_EPSILON)
 	{
 		setur = -1.F;
 	}
@@ -35,11 +35,11 @@ void Camera::Update(const XMFLOAT4& moveVector, float xDelta, float yDelta)
 	const float LIMIT = XM_PIDIV2 - FLT_EPSILON;
 	if (mPitch > LIMIT)
 	{
-		mPitch = LIMIT;
+		mPitch = LIMIT - FLT_EPSILON;
 	}
 	if (mPitch < -LIMIT)
 	{
-		mPitch = -LIMIT;
+		mPitch = -LIMIT + FLT_EPSILON;
 	}
 	const float COS = cosf(mPitch);
 	XMVECTOR forward = XMVectorSet(COS * sinf(mYaw), sinf(mPitch), COS * cosf(mYaw), 0.0F);
