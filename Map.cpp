@@ -40,8 +40,8 @@ void Map::Draw(void)
 
 	CBObject cbObj;
 
-	XMMATRIX scale = XMMatrixScaling(3.0f, 1.0f, 3.0f);
-	XMMATRIX translate = XMMatrixTranslation(-200.0f, -10.0f, -200.0f);
+	XMMATRIX scale = XMMatrixScaling(4.0f, 1.0f, 4.0f);
+	XMMATRIX translate = XMMatrixTranslation(-(MAP_DIM), -140.0f, -(MAP_DIM));
 
 	
 	XMStoreFloat4x4(&cbObj.World, XMMatrixTranspose(scale * translate));
@@ -95,7 +95,7 @@ bool Map::loadMeshData(void)
 
 	mVertices = createVertex(MAP_DIM, MAP_DIM, 1);
 
-	float scale[] = { 1, 25, 35, 9 };
+	float scale[] = { 24, 15, 50, 19 };
 	const int PICH_DIM = (MAP_DIM / (TERRAIN_COUNT / 2));
 
 	for (int i = 0; i < TERRAIN_COUNT / 2; ++i)
@@ -106,8 +106,8 @@ bool Map::loadMeshData(void)
 
 			vector<Vertex> newLayer = createVertex(PICH_DIM, PICH_DIM, scale[j + (TERRAIN_COUNT / 2) * i]);
 			
-			const int x = j * (MAP_DIM / (TERRAIN_COUNT / 2));
-			const int z = i * (MAP_DIM / (TERRAIN_COUNT / 2));
+			const int x = j * (MAP_DIM - 1);
+			const int z = i * (MAP_DIM - 1);
 			updateVertexBuffer(newLayer, x, z);
 		}
 	}
@@ -343,7 +343,6 @@ bool Map::createBuffers(void)
 				vector<uint32_t> indices;
 				const int pointX = j * (CHUNK_DIM - 1);
 				const int pointZ = i * (CHUNK_DIM - 1);
-				// TODO: Z축 끊김 현상 해결 필요
 
 				for (int z = pointZ; z < pointZ + PADDING && z < MAP_DIM; ++z)
 				{
@@ -397,13 +396,13 @@ LB_FAILED_CREATE_VERTEX_BUFFER:
 void Map::updateVertexBuffer(const vector<Vertex>& newPerlin, const int& x, const int& z)
 {
 	const int BASE_DIM= mVertices.size();
-	const int HALF_BASE_DIM= BASE_DIM/ 2;
+	const int HALF_BASE_DIM= BASE_DIM / 2;
 	const int LAYER_DIM = newPerlin.size();
 	const float BLEND = 0.5f;
 
 	int standIdx = x + (MAP_DIM / 2) * z;
 
-	for (int i = 0; i < LAYER_DIM&& standIdx + i < BASE_DIM; ++i)
+	for (int i = 0; i < LAYER_DIM && standIdx + i < BASE_DIM; ++i)
 	{
 		float h_old = mVertices[standIdx + i].Position.y;
 		float h_new = newPerlin[i].Position.y;
@@ -415,30 +414,28 @@ void Map::updateVertexBuffer(const vector<Vertex>& newPerlin, const int& x, cons
 
 void Map::updateChunkIndexBuffers(void)
 {
-	const int EXTEND_DIM = 4;
-	const int COORD_OFFSET = MAP_DIM / 2;
+	const float EXTEND_DIM = 4.0f;
 
 	ID3D11DeviceContext* ctx = mBase->GetImmediateContext();
 
+	float worldX = mCamPos.x / EXTEND_DIM + MAP_DIM;
+	float worldZ = mCamPos.z / EXTEND_DIM + MAP_DIM;
 
-	int camX = static_cast<int>((mCamPos.x + COORD_OFFSET) / (float)EXTEND_DIM) / CHUNK_DIM;
-	int camZ = static_cast<int>((mCamPos.z + COORD_OFFSET) / (float)EXTEND_DIM) / CHUNK_DIM;
+	int camX = (floor(worldX / (float)(EXTEND_DIM * CHUNK_DIM)));
+	int camZ = (floor(worldZ / (float)(EXTEND_DIM * CHUNK_DIM)));
 
-	if (camX < 0 || camX >= INDEX_BUFFER_DIM || camZ < 0 || camZ >= INDEX_BUFFER_DIM)
-		return;
-
-	int minX = std::max(0, camX - 1);
-	int maxX = std::min(INDEX_BUFFER_DIM - 1, camX + 1);
-	int minZ = std::max(0, camZ - 1);
-	int maxZ = std::min(INDEX_BUFFER_DIM - 1, camZ + 1);
+	int minX = std::max(0, camX - 2);
+	int maxX = std::min(INDEX_BUFFER_DIM - 1, camX + 2);
+	int minZ = std::max(0, camZ - 2);
+	int maxZ = std::min(INDEX_BUFFER_DIM - 1, camZ + 2);
 
 
-	for (int z = minZ; z < maxZ; ++z)
+	for (int z = minZ; z <= maxZ; ++z)
 	{
-		for (int x = minX; x < maxX; ++x)
+		for (int x = minX; x <= maxX; ++x)
 		{
 			size_t indexCount = (CHUNK_DIM) * (CHUNK_DIM) * 6;
-
+			
 			ctx->IASetIndexBuffer(mIndexBuffers[x + INDEX_BUFFER_DIM * z], DXGI_FORMAT_R32_UINT, 0);
 			ctx->DrawIndexed(static_cast<UINT>(indexCount), 0, 0);
 		}

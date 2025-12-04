@@ -3,7 +3,7 @@
 
 using namespace DirectX;
 
-#define FAR_DISTANCE (1000.F)
+#define FAR_DISTANCE (100000.F)
 
 struct Vertex
 {
