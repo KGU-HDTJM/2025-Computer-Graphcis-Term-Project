@@ -3,7 +3,9 @@
 
 using namespace DirectX;
 
-#define FAR_DISTANCE (100000.F)
+#define FAR_DISTANCE (1000.F)
+#define INSTANCE_COUNT (1000)
+#define SPHERE_VOLUME (1000)
 
 struct Vertex
 {
@@ -44,7 +46,7 @@ struct ComputeBuf
 	XMFLOAT4 Velocity;
 	XMFLOAT4 Position;
 	float Radius;
-	XMFLOAT4 Padding;
+	XMFLOAT3 Padding;
 };
 
 struct InstanceObject
@@ -53,8 +55,10 @@ struct InstanceObject
 	ComputeBuf* ComputeData;
 };
 
-struct CBTime
+struct CBCompute
 {
+	uint32_t FrameOffset; // Rotating offset
+	uint32_t InstanceCount; // Total objects
 	float DeltaTime;
-	XMFLOAT3 TimeCBPadding;
+	float Padding;
 };

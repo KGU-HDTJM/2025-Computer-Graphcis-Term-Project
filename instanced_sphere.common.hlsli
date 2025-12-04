@@ -1,9 +1,12 @@
 #include "sphere.common.hlsli"
-cbuffer TimeCB : register(b4)
+
+cbuffer CBCompute : register(b4)
 {
+    uint FrameOffset; // Rotating offset
+    uint InstanceCount; // Total objects
     float DeltaTime;
-    float3 TimeCBPadding;
-};
+    float ComputePadding;
+}
 
 struct InstanceData
 {

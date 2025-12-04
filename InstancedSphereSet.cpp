@@ -2,18 +2,42 @@
 
 void InstancedSphereSet::Update(float deltaTime)
 {
-	for (size_t i = 0; i < mInstCount; ++i)
+	// TODO: get compute shader result
+	for (size_t i = 0; i < InstCount; ++i)
 	{
 		ComputeBuf& computeData = mComputeData->at(i);
 
 		// Update position using velocity
 		XMVECTOR pos = XMLoadFloat4(&computeData.Position);
 		XMVECTOR vel = XMLoadFloat4(&computeData.Velocity);
-		vel = vel * deltaTime;
-		
-		if (XMVector3Length(pos + vel).m128_f32[0] < 1000.F)
+		XMVECTOR dVel = vel * deltaTime;
+
+		// CPU collision detection
+		XMVECTOR newVel = XMVectorZero();
+		bool bCollisionDetected = false;
+		for (size_t j = 0; j < InstCount; ++j)
 		{
-			XMStoreFloat4(&computeData.Position, pos + vel);
+			if (i == j)
+			{
+				continue;
+			}
+			ComputeBuf& temp = mComputeData->at(j);
+			XMVECTOR diff = XMLoadFloat4(&temp.Position) - pos;
+			float radiusSum = temp.Radius + computeData.Radius;
+			if (XMVector3Dot(diff, diff).m128_f32[0] < radiusSum * radiusSum)
+			{
+				bCollisionDetected = true;
+				newVel += XMLoadFloat4(&temp.Velocity);
+			}
+		}
+		if (bCollisionDetected)
+		{
+			XMStoreFloat4(&computeData.Velocity, newVel);
+		}
+		//================CPU Collision detectoin===========
+		if (XMVector3Length(pos + dVel).m128_f32[0] < SPHERE_VOLUME)
+		{
+			XMStoreFloat4(&computeData.Position, pos + dVel);
 		}
 		else
 		{
@@ -22,7 +46,11 @@ void InstancedSphereSet::Update(float deltaTime)
 		}
 
 		// Optional: apply bounds or wrap-around logic
-		if (computeData.Position.y < 0.0f) computeData.Position.y = 0.0f;
+		if (computeData.Position.y < -500.0f)
+		{
+			computeData.Position.y = -500.0f;
+			computeData.Velocity = XMFLOAT4(0.F, 0.F, 0.F, 0.F);
+		}
 
 		(*mComputeData)[i] = computeData;
 
@@ -51,7 +79,10 @@ void InstancedSphereSet::Update(float deltaTime)
 InstancedSphereSet::~InstancedSphereSet(void)
 {
 	mInstBuffer->Release();
-	mCSBuffer->Release();
+	// mCSBuffer->Release();
+
+	delete mInstData;
+	delete mComputeData;
 }
 
 void InstancedSphereSet::Draw(void)
@@ -91,10 +122,12 @@ void InstancedSphereSet::Draw(void)
 	//context->PSSetConstantBuffers(0, 1, &cbObj);
 	context->PSSetConstantBuffers(1, 1, &cbFrame);
 	context->PSSetConstantBuffers(2, 1, &cbResize);
+	
+	// TODO: Run compute shader
 
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST);
 	// Draw instanced
-	context->DrawIndexedInstanced(indexCount, mInstCount, 0, 0, 0);
+	context->DrawIndexedInstanced(indexCount, InstCount, 0, 0, 0);
 	context->HSSetShader(nullptr, nullptr, 0);
 	context->DSSetShader(nullptr, nullptr, 0);
 }

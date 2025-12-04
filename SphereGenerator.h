@@ -28,6 +28,7 @@ public:
 	ID3D11HullShader* GetInstHullShader(void) const;
 	ID3D11DomainShader* GetInstDomainShader(void) const;
 	ID3D11PixelShader* GetInstPixelShader(void) const;
+	ID3D11ComputeShader* GetInstComputeShader(void) const;
 	ID3D11InputLayout* GetInstInputLayout(void) const;
 	ID3D11Buffer* GetCBTimeBuffer(void) const;
 
@@ -36,8 +37,6 @@ private:
 	ID3D11Buffer* createIndexBuffer(UINT& count) const;
 	void initConstantBuffer();
 
-	
-	
 private:
 	// common
 	D3D11Base* mBase;
@@ -55,7 +54,8 @@ private:
 	ID3D11HullShader* mInstHullShader;
 	ID3D11DomainShader* mInstDomainShader;
 	ID3D11PixelShader* mInstPixelShader;
+	ID3D11ComputeShader* mInstComputeShader;
 	ID3D11InputLayout* mInstInputLayout;
-	ID3D11Buffer* mComputeBuffer;
+	ID3D11Buffer* mCBCompute;
 };
 

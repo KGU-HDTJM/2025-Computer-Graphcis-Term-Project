@@ -38,7 +38,7 @@ D3D11_INPUT_ELEMENT_DESC InstanceInputLayout[INST_INPUT_LAYOUT_ELEMENT] =
 	{ "NORMAL", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 32, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 
-	// Per-instance data (slot 1)
+	// Per-instance data (slot 1)s
 	{ "WORLD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0,  D3D11_INPUT_PER_INSTANCE_DATA, 1 },
 	{ "WORLD", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 16, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
 	{ "WORLD", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 32, D3D11_INPUT_PER_INSTANCE_DATA, 1 },
@@ -71,6 +71,7 @@ SphereGenerator::SphereGenerator(D3D11Base* base)
 	hsBlob = mBase->CompileShader((LPWSTR)L"instanced_sphere.hs.hlsl", "hs_5_0");
 	dsBlob = mBase->CompileShader((LPWSTR)L"instanced_sphere.ds.hlsl", "ds_5_0");
 	psBlob = mBase->CompileShader((LPWSTR)L"instanced_sphere.ps.hlsl", "ps_5_0");
+	ID3DBlob* csBlob = mBase->CompileShader((LPWSTR)L"instanced_sphere.cs.hlsl", "cs_5_0");
 
 	// create input layout
 	mBase->GetDevice()->CreateInputLayout(InstanceInputLayout, INST_INPUT_LAYOUT_ELEMENT, vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &mInstInputLayout);
@@ -79,11 +80,13 @@ SphereGenerator::SphereGenerator(D3D11Base* base)
 	mBase->GetDevice()->CreateHullShader(hsBlob->GetBufferPointer(), hsBlob->GetBufferSize(), nullptr, &mInstHullShader);
 	mBase->GetDevice()->CreateDomainShader(dsBlob->GetBufferPointer(), dsBlob->GetBufferSize(), nullptr, &mInstDomainShader);
 	mBase->GetDevice()->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), nullptr, &mInstPixelShader);
+	mBase->GetDevice()->CreateComputeShader(csBlob->GetBufferPointer(), csBlob->GetBufferSize(), nullptr, &mInstComputeShader);
 
 	vsBlob->Release();
 	hsBlob->Release();
 	dsBlob->Release();
 	psBlob->Release();
+	csBlob->Release();
 
 	for (int i = 0; i < 8; ++i)
 	{
@@ -106,6 +109,15 @@ SphereGenerator::~SphereGenerator()
 	mTessellationBuffer->Release();
 	mVertexBuffer->Release();
 	mIndexBuffer->Release();
+
+	mInstVertexShader->Release();
+	mInstHullShader->Release();
+	mInstDomainShader->Release();
+	mInstPixelShader->Release();
+	mInstComputeShader->Release();
+	mInstInputLayout->Release();
+	mCBCompute->Release();
+
 }
 
 Sphere* SphereGenerator::CreateSphere(float radius, const XMFLOAT4& pos) const
@@ -161,6 +173,11 @@ ID3D11PixelShader* SphereGenerator::GetInstPixelShader(void) const
 	return mInstPixelShader;
 }
 
+ID3D11ComputeShader* SphereGenerator::GetInstComputeShader(void) const
+{
+	return mInstComputeShader;
+}
+
 ID3D11InputLayout* SphereGenerator::GetInstInputLayout(void) const
 {
 	return mInstInputLayout;
@@ -168,7 +185,7 @@ ID3D11InputLayout* SphereGenerator::GetInstInputLayout(void) const
 
 ID3D11Buffer* SphereGenerator::GetCBTimeBuffer(void) const
 {
-	return mComputeBuffer;
+	return mCBCompute;
 }
 
 ID3D11Buffer* SphereGenerator::GetTessellationBuffer() const
@@ -262,19 +279,20 @@ void SphereGenerator::initConstantBuffer()
 	ID3D11DeviceContext* context = mBase->GetImmediateContext();
 	context->UpdateSubresource(mTessellationBuffer, 0, nullptr, &tessData, 0, 0);
 
-	mComputeBuffer = nullptr;
+	mCBCompute = nullptr;
 	cbd.Usage = D3D11_USAGE_DEFAULT;
-	cbd.ByteWidth = sizeof(CBTime);
+	cbd.ByteWidth = sizeof(CBCompute);
 	cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	cbd.CPUAccessFlags = 0;
 
-	hr = mBase->GetDevice()->CreateBuffer(&cbd, nullptr, &mComputeBuffer);
+	hr = mBase->GetDevice()->CreateBuffer(&cbd, nullptr, &mCBCompute);
 	assert(SUCCEEDED(hr));
 
-	CBTime cbTime;
-	cbTime.DeltaTime = 0.F;
-	cbTime.TimeCBPadding = DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f);
-	context->UpdateSubresource(mComputeBuffer, 0, nullptr, &cbTime, 0, 0);
+	CBCompute cbCompute = {};
+	cbCompute.DeltaTime = 0.F;
+	cbCompute.FrameOffset = 0.F;
+	cbCompute.InstanceCount = 0.F;
+	context->UpdateSubresource(mCBCompute, 0, nullptr, &cbCompute, 0, 0);
 }
 
 

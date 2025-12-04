@@ -235,12 +235,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			MovingFactor.Down = 1.0F;
 		}
 		break;
-		case VK_ESCAPE:
+		case 'Q':
+		case 'q':
 		{
 			bFixMousePos = !bFixMousePos;
 			ShowCursor(!bFixMousePos);
 		}
 		break;
+		case 'R':
+		case 'r':
+		{
+			bShouldUpdateLightPos = !bShouldUpdateLightPos;
+		}
+		break;
+		case 'E':
+		case 'e':
+		{
+			bShouldMoveSphere = true;
+		}
+		break;
+
 		default:
 			break;
 		}
@@ -284,19 +298,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			MovingFactor.Down = 0.0F;
 		}
 		break;
-		case 'R':
-		case 'r':
-		{
-			bShouldUpdateLightPos = !bShouldUpdateLightPos;
-		}
-		break;
-		case 'E':
-		case 'e':
-		{
-			bShouldMoveSphere = true;
-		}
-		break;
-
+		
 		default:
 			break;
 		}
@@ -374,11 +376,11 @@ bool Init(void)
 	pSPGen = new SphereGenerator(Base);
 
 	pSphere = pSPGen->CreateSphere(15.F, XMFLOAT4(30.F, 0.F, 0.F, 1.F));
-	pInstancedSpheres = pSPGen->CreateSphereSet(15.F, XMFLOAT4(0.F, 0.F, 0.F, 0.F), 1000);
+	pInstancedSpheres = pSPGen->CreateSphereSet(15.F, XMFLOAT4(0.F, 0.F, 0.F, 0.F), INSTANCE_COUNT);
 	bShouldMoveSphere = 0;
 	InstIdx = 0;
 	MainCamera = new Camera(
-		XMFLOAT4(0.F, 20.F, -40.F, 1.0F),
+		XMFLOAT4(0.F, 50.F, -40.F, 1.0F),
 		XMFLOAT4(0.F, 0.F, 0.F, 0.F),
 		XMFLOAT4(0.F, 1.F, 0.F, 0.F));
 	MainCamera->Sensitivity.x = 15.0F;
@@ -448,11 +450,13 @@ void Update(void)
 	{
 		bShouldMoveSphere = false;
 		InstanceObject instObj = pInstancedSpheres->GetInstanceObject(InstIdx);
-		++InstIdx;
+		InstIdx = (InstIdx + 1) % pInstancedSpheres->InstCount;
 		XMFLOAT4 camPos = MainCamera->GetPosition();
 		XMFLOAT4 camForward = MainCamera->GetViewVector();
-		XMVECTOR newPos = XMLoadFloat4(&camPos) + (XMLoadFloat4(&camForward) * 15.F);
+		XMVECTOR moveDirection = XMLoadFloat4(&camForward) * 75.F;
+		XMVECTOR newPos = XMLoadFloat4(&camPos) + moveDirection;
 		XMStoreFloat4(&instObj.ComputeData->Position, newPos);
+		XMStoreFloat4(&instObj.ComputeData->Velocity, moveDirection);
 	}
 	pInstancedSpheres->Update(deltaTime);
 
@@ -501,7 +505,7 @@ void Render(void)
 
 void Shutdown(void)
 {
-	// delete pMap;
+	delete pMap;
 	delete GameTimer;
 	delete pInstancedSpheres;
 	delete pSphere;
