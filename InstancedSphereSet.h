@@ -57,8 +57,9 @@ public:
 
 		ID3D11Buffer* computeBuffer = nullptr;
 		hr = mBase->GetDevice()->CreateBuffer(&bufferDesc, &initSubresource, &computeBuffer);
-
+		bCollisionResponse = false;
 		Update(0.F);
+		
 	}
 	~InstancedSphereSet(void);
 
@@ -68,6 +69,7 @@ public:
 
 public:
 	const size_t InstCount;
+	bool bCollisionResponse;
 private:
 	D3D11Base* mBase;
 	const SphereGenerator* mGenerator;

@@ -254,6 +254,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			bShouldMoveSphere = true;
 		}
 		break;
+		case 'C':
+		case 'c':
+		{
+			pInstancedSpheres->bCollisionResponse = !pInstancedSpheres->bCollisionResponse;
+		}
+		break;
 
 		default:
 			break;
@@ -288,6 +294,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			MovingFactor.Right = 0.0F;
 		}
 		break;
+		
 		case VK_SPACE:
 		{
 			MovingFactor.Up = 0.0F;

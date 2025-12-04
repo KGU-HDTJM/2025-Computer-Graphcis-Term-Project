@@ -12,26 +12,28 @@ void InstancedSphereSet::Update(float deltaTime)
 		XMVECTOR dVel = vel * deltaTime;
 
 		// CPU collision detection
-		XMVECTOR newVel = vel;// XMVectorZero();
-		bool bCollisionDetected = false;
-		for (size_t j = 0; j < InstCount; ++j)
+		if (bCollisionResponse)
 		{
-			if (i == j)
+			XMVECTOR newVel = vel;
+			for (size_t j = 0; j < InstCount; ++j)
 			{
-				continue;
+				if (i == j)
+				{
+					continue;
+				}
+				ComputeBuf temp = mComputeData->at(j);
+				XMVECTOR diff = XMLoadFloat4(&temp.Position) - pos;
+				float radiusSum = temp.Radius + computeData.Radius;
+				if (XMVector3Dot(diff, diff).m128_f32[0] < radiusSum * radiusSum)
+				{
+					XMVECTOR cv = XMLoadFloat4(&temp.Velocity);
+
+					XMVECTOR adder = diff * XMVector3Dot(XMVector3Normalize(newVel), XMVector3Normalize(cv));
+					newVel += adder;
+				}
 			}
-			ComputeBuf temp = mComputeData->at(j);
-			XMVECTOR diff = XMLoadFloat4(&temp.Position) - pos;
-			float radiusSum = temp.Radius + computeData.Radius;
-			if (XMVector3Dot(diff, diff).m128_f32[0] < radiusSum * radiusSum)
-			{
-				bCollisionDetected = true;
-				newVel += XMLoadFloat4(&temp.Velocity);
-			}
-		}
-		if (bCollisionDetected)
-		{
 			XMStoreFloat4(&computeData.Velocity, newVel);
+			computeData.Velocity.w = 0.F;
 		}
 		//================CPU Collision detectoin===========
 		if (XMVector3Length(pos + dVel).m128_f32[0] < SPHERE_VOLUME)
