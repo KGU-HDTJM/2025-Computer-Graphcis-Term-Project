@@ -20,6 +20,7 @@ public:
 	{
 		mInstData = new vector<InstanceData>(count);
 		mComputeData = new vector<ComputeBuf>(count);
+		mSwapData = new vector<ComputeBuf>(count);
 
 		D3D11_BUFFER_DESC vbDesc = {};
 		vbDesc.Usage = D3D11_USAGE_DYNAMIC;                // Dynamic for frequent updates
@@ -73,6 +74,7 @@ private:
 	
 	vector<InstanceData>* mInstData;
 	vector<ComputeBuf>* mComputeData;
+	vector<ComputeBuf>* mSwapData;
 	ID3D11Buffer* mInstBuffer;
 	ID3D11Buffer* mCSBuffer;
 };

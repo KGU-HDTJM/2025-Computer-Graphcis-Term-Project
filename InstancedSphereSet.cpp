@@ -5,15 +5,14 @@ void InstancedSphereSet::Update(float deltaTime)
 	// TODO: get compute shader result
 	for (size_t i = 0; i < InstCount; ++i)
 	{
-		ComputeBuf& computeData = mComputeData->at(i);
-
+		ComputeBuf computeData = mComputeData->at(i);
 		// Update position using velocity
 		XMVECTOR pos = XMLoadFloat4(&computeData.Position);
 		XMVECTOR vel = XMLoadFloat4(&computeData.Velocity);
 		XMVECTOR dVel = vel * deltaTime;
 
 		// CPU collision detection
-		XMVECTOR newVel = XMVectorZero();
+		XMVECTOR newVel = vel;// XMVectorZero();
 		bool bCollisionDetected = false;
 		for (size_t j = 0; j < InstCount; ++j)
 		{
@@ -21,7 +20,7 @@ void InstancedSphereSet::Update(float deltaTime)
 			{
 				continue;
 			}
-			ComputeBuf& temp = mComputeData->at(j);
+			ComputeBuf temp = mComputeData->at(j);
 			XMVECTOR diff = XMLoadFloat4(&temp.Position) - pos;
 			float radiusSum = temp.Radius + computeData.Radius;
 			if (XMVector3Dot(diff, diff).m128_f32[0] < radiusSum * radiusSum)
@@ -52,7 +51,7 @@ void InstancedSphereSet::Update(float deltaTime)
 			computeData.Velocity = XMFLOAT4(0.F, 0.F, 0.F, 0.F);
 		}
 
-		(*mComputeData)[i] = computeData;
+		(*mSwapData)[i] = computeData;
 
 		// Build world matrix for rendering
 		XMMATRIX scale = XMMatrixScaling(computeData.Radius, computeData.Radius, computeData.Radius);
@@ -74,6 +73,9 @@ void InstancedSphereSet::Update(float deltaTime)
 		// Unmap after writing
 		mBase->GetImmediateContext()->Unmap(mInstBuffer, 0);
 	}
+	vector<ComputeBuf>* temp = mSwapData;
+	mSwapData = mComputeData;
+	mComputeData = temp;
 }
 
 InstancedSphereSet::~InstancedSphereSet(void)
